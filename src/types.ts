@@ -12,6 +12,7 @@ export interface ContextMeterConfig {
   include?: string[];
   exclude?: string[];
   maxTokens?: number;
+  maxFileTokens?: number;
   categories?: CategoryConfig[];
 }
 
@@ -26,6 +27,7 @@ export interface NormalizedConfig {
   include: string[];
   exclude: string[];
   maxTokens?: number;
+  maxFileTokens?: number;
   categories: NormalizedCategory[];
 }
 
