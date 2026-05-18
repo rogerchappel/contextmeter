@@ -5,29 +5,29 @@ export type BudgetStatus = "ok" | "over";
 export interface CategoryConfig {
   name: string;
   globs: string[];
-  maxTokens?: number;
+  maxTokens?: number | undefined;
 }
 
 export interface ContextMeterConfig {
-  include?: string[];
-  exclude?: string[];
-  maxTokens?: number;
-  maxFileTokens?: number;
-  categories?: CategoryConfig[];
+  include?: string[] | undefined;
+  exclude?: string[] | undefined;
+  maxTokens?: number | undefined;
+  maxFileTokens?: number | undefined;
+  categories?: CategoryConfig[] | undefined;
 }
 
 export interface NormalizedCategory {
   name: string;
   globs: string[];
-  maxTokens?: number;
+  maxTokens?: number | undefined;
 }
 
 export interface NormalizedConfig {
   root: string;
   include: string[];
   exclude: string[];
-  maxTokens?: number;
-  maxFileTokens?: number;
+  maxTokens?: number | undefined;
+  maxFileTokens?: number | undefined;
   categories: NormalizedCategory[];
 }
 
@@ -38,7 +38,7 @@ export interface FileMetrics {
   lines: number;
   nonEmptyLines: number;
   tokens: number;
-  maxTokens?: number;
+  maxTokens?: number | undefined;
   status: BudgetStatus;
 }
 
@@ -49,7 +49,7 @@ export interface CategoryMetrics {
   lines: number;
   nonEmptyLines: number;
   tokens: number;
-  maxTokens?: number;
+  maxTokens?: number | undefined;
   status: BudgetStatus;
 }
 
@@ -59,7 +59,7 @@ export interface ScanSummary {
   lines: number;
   nonEmptyLines: number;
   tokens: number;
-  maxTokens?: number;
+  maxTokens?: number | undefined;
   status: BudgetStatus;
 }
 
