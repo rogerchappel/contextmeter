@@ -7,10 +7,10 @@ import type { ContextMeterConfig, NormalizedConfig } from "./types.js";
 
 export interface LoadConfigOptions {
   root: string;
-  configPath?: string;
-  include?: string[];
-  maxTokens?: number;
-  maxFileTokens?: number;
+  configPath?: string | undefined;
+  include?: string[] | undefined;
+  maxTokens?: number | undefined;
+  maxFileTokens?: number | undefined;
 }
 
 async function readConfigFile(root: string, configPath?: string): Promise<ContextMeterConfig> {
