@@ -1,0 +1,16 @@
+{
+  "maxTokens": 700,
+  "maxFileTokens": 260,
+  "categories": [
+    {
+      "name": "product-docs",
+      "globs": ["docs/**/*.md"],
+      "maxTokens": 420
+    },
+    {
+      "name": "prompts",
+      "globs": ["prompts/**/*.md"],
+      "maxTokens": 180
+    }
+  ]
+}
