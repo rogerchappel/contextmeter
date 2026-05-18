@@ -10,6 +10,7 @@ export interface LoadConfigOptions {
   configPath?: string;
   include?: string[];
   maxTokens?: number;
+  maxFileTokens?: number;
 }
 
 async function readConfigFile(root: string, configPath?: string): Promise<ContextMeterConfig> {
@@ -43,7 +44,7 @@ export async function loadConfig(options: LoadConfigOptions): Promise<Normalized
     include,
     exclude: [...DEFAULT_EXCLUDE, ...(config.exclude ?? [])],
     maxTokens: options.maxTokens ?? config.maxTokens,
-    maxFileTokens: config.maxFileTokens,
+    maxFileTokens: options.maxFileTokens ?? config.maxFileTokens,
     categories: categories.map((category) => ({
       name: category.name,
       globs: category.globs,
