@@ -1,0 +1,24 @@
+{
+  "repo": "contextmeter",
+  "owner": "rogerchappel",
+  "defaultBranch": "main",
+  "packageManager": "npm",
+  "runtime": "node>=20",
+  "mvp": {
+    "status": "implemented",
+    "commands": [
+      "contextmeter scan .",
+      "contextmeter scan . --config contextmeter.json --format json",
+      "contextmeter budget 'docs/**/*.md' --max-tokens 12000"
+    ],
+    "outputs": ["markdown", "json"],
+    "fixtures": ["fixtures/docs-heavy", "fixtures/source-heavy"]
+  },
+  "verification": [
+    "npm run check",
+    "npm test",
+    "npm run smoke",
+    "bash scripts/validate.sh"
+  ],
+  "topics": ["typescript", "cli", "local-first", "tokens", "agent-tools"]
+}
