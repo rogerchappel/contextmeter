@@ -1,0 +1,16 @@
+{
+  "maxTokens": 900,
+  "maxFileTokens": 320,
+  "categories": [
+    {
+      "name": "source",
+      "globs": ["src/**/*.ts"],
+      "maxTokens": 650
+    },
+    {
+      "name": "tests",
+      "globs": ["test/**/*.ts"],
+      "maxTokens": 260
+    }
+  ]
+}
