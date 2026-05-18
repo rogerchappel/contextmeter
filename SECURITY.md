@@ -2,18 +2,14 @@
 
 ## Supported Versions
 
-Replace this section with the supported versions for `contextmeter`.
+ContextMeter has not published a stable release yet. Until a `1.0.0` release is
+available, security fixes are handled on the default branch and included in the
+next package release.
 
-Example:
-
-```md
 | Version | Supported |
 | --- | --- |
-| .x | Yes |
-| < .0 | No |
-```
-
-If the project does not publish versioned releases yet, say that clearly.
+| main | Best effort |
+| < 0.1.0 | No |
 
 ## Reporting a Vulnerability
 
@@ -46,6 +42,7 @@ In scope:
 - Vulnerabilities in contextmeter.
 - Insecure default configuration shipped by this project.
 - CI, release, or dependency guidance maintained by this project.
+- Bugs that cause ContextMeter to read outside the requested local scan root.
 
 Out of scope:
 
