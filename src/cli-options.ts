@@ -5,10 +5,10 @@ export interface ParsedOptions {
   command: "scan" | "budget" | "help";
   root: string;
   globs: string[];
-  configPath?: string;
+  configPath?: string | undefined;
   format: OutputFormat;
-  maxTokens?: number;
-  maxFileTokens?: number;
+  maxTokens?: number | undefined;
+  maxFileTokens?: number | undefined;
 }
 
 function readValue(args: string[], index: number, flag: string): string {
@@ -51,7 +51,7 @@ export function parseCliArgs(args: string[]): ParsedOptions {
   let maxFileTokens: number | undefined;
 
   for (let index = 1; index < args.length; index += 1) {
-    const arg = args[index];
+    const arg = args[index] ?? "";
 
     if (arg === "--config") {
       configPath = readValue(args, index, arg);
