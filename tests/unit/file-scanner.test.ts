@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { writeFileSync, unlinkSync } from 'node:fs';
 import { getLanguage, isBinary, DEFAULT_EXCLUDES } from '../../src/utils/file-scanner.js';
 
 describe('FileScanner', () => {
@@ -42,15 +43,13 @@ describe('FileScanner', () => {
     });
     it('detects text file as non-binary', () => {
       const tmp = '/tmp/cm-test-isbinary.txt';
-      require('fs').writeFileSync(tmp, 'hello world');
-      assert.strictEqual(isBinary(tmp), false);
-      require('fs').unlinkSync(tmp);
+      writeFileSync(tmp, 'hello world');
+      try { assert.strictEqual(isBinary(tmp), false); } finally { unlinkSync(tmp); }
     });
     it('detects ts file as non-binary', () => {
       const tmp = '/tmp/cm-test-isbinary.ts';
-      require('fs').writeFileSync(tmp, 'const x = 42;');
-      assert.strictEqual(isBinary(tmp), false);
-      require('fs').unlinkSync(tmp);
+      writeFileSync(tmp, 'const x = 42;');
+      try { assert.strictEqual(isBinary(tmp), false); } finally { unlinkSync(tmp); }
     });
   });
 

@@ -3,11 +3,22 @@ import { scanDirectory, loadGitignore, DEFAULT_EXCLUDES } from './utils/file-sca
 import { approximateTokens, countTokensForLanguage } from './core/token-counter.js';
 import { analyzeContent } from './core/content-analyzer.js';
 import { simulateOverflow, CONTEXT_PRESETS } from './core/overflow-simulator.js';
+import { getLanguage } from './utils/file-scanner.js';
+import fs from 'node:fs';
 
 const VERSION = '0.1.0';
 
 async function countCommand(path: string, json = false) {
-  const files = scanDirectory(path, [...DEFAULT_EXCLUDES, ...(loadGitignore(path))]);
+  const stat = fs.statSync(path);
+  let files: import('./utils/file-scanner.js').FileEntry[];
+  if (stat.isFile()) {
+    const content = fs.readFileSync(path, 'utf-8');
+    const language = getLanguage(path);
+    const relPath = path;
+    files = [{ path, relativePath: relPath, language, content, isBinary: false, size: content.length }];
+  } else {
+    files = scanDirectory(path, [...DEFAULT_EXCLUDES, ...(loadGitignore(path))]);
+  }
   const textFiles = files.filter(f => !f.isBinary && f.content !== undefined);
   let totalTokens = 0;
   const fileTokens = textFiles.map(f => {
@@ -123,7 +134,7 @@ async function reportCommand(path: string, json = false) {
   const analyzeResult = analyzeContent(fileData, totalTokens);
   const simResult = simulateOverflow(fileData, 8192, 'combined');
   if (json) {
-    console.log(JSON.stringify({ tokenCount: totalTokens, analysis: analyzeResult, simulation: simResult }, null, 2));
+    console.log(JSON.stringify({ totalTokens, tokenCount: totalTokens, analysis: analyzeResult, simulation: simResult }, null, 2));
   } else {
     console.log(`\nContextMeter - Report\n${'='.repeat(50)}`);
     console.log(`Token Count: ${totalTokens.toLocaleString()}`);
@@ -135,6 +146,23 @@ async function reportCommand(path: string, json = false) {
 
 const args = process.argv.slice(2);
 const command = args[0] || 'help';
+
+function showHelp() {
+  console.log(`Usage: contextmeter <command> [args]
+
+Commands:
+  count <path>              Count tokens in a file or directory
+  analyze <path>            Analyze content for redundancy
+  simulate <path> [--limit N|--model name]  Simulate context window overflow
+  report <path>             Full report with token count, analysis, and simulation
+
+Flags:
+  --json            Output results as JSON
+  --limit <tokens>  Set token limit for simulation
+  --model <name>    Use preset model context window (gpt-4, claude-3-sonnet, etc.)
+
+${VERSION}`);
+}
 
 if (command === 'count') {
   countCommand(args[1] || '.', args.includes('--json')).catch(console.error);
@@ -151,21 +179,8 @@ if (command === 'count') {
   reportCommand(args[1] || '.', args.includes('--json')).catch(console.error);
 } else if (command === '--version' || command === '-V' || command === '-v') {
   console.log(`contextmeter v${VERSION}`);
-} else if (command === '--help' || command === '-h') {
-  console.log(`Usage: contextmeter <command> [args]
-
-Commands:
-  count <path>              Count tokens in a file or directory
-  analyze <path>            Analyze content for redundancy
-  simulate <path> [--limit N|--model name]  Simulate context window overflow
-  report <path>             Full report with token count, analysis, and simulation
-
-Flags:
-  --json            Output results as JSON
-  --limit <tokens>  Set token limit for simulation
-  --model <name>    Use preset model context window (gpt-4, claude-3-sonnet, etc.)
-
-${VERSION}`);
+} else if (command === '--help' || command === '-h' || command === 'help') {
+  showHelp();
 } else {
   console.error(`Unknown command: ${command}`);
   console.error('Run contextmeter --help for usage information.');

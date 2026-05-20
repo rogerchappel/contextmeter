@@ -8,7 +8,7 @@ describe('TokenCounter', () => {
     it('returns approximately 1 token per 3.6 characters', () => {
       const text = 'a '.repeat(360);
       const result = approximateTokens(text);
-      assert.ok(Math.abs(result - 100) <= 5, `expected ~100, got ${result}`);
+      assert.ok(Math.abs(result - 200) <= 10, `expected ~100, got ${result}`);
     });
     it('handles short strings', () => {
       assert.ok(approximateTokens('hello') >= 1);
@@ -55,11 +55,11 @@ describe('TokenCounter', () => {
       assert.strictEqual(countTokensForLanguage(text, 'typescript'), countTokensForLanguage(text, 'typescript'));
     });
     it('handles unknown language with default ratio', () => {
-      const text = 'some text here';
-      const unknown = countTokensForLanguage(text, 'unknown_lang');
-      const textDefault = countTokensForLanguage(text, 'text');
+      const text = 'some longer text here to show the difference between ratios';
+      const unknown = countTokensForLanguage(text, 'unknown_lang'); // 1/3.6
+      const xmlDefault = countTokensForLanguage(text, 'xml'); // 1/4.2
       assert.ok(unknown > 0);
-      assert.notStrictEqual(unknown, textDefault);
+      assert.notStrictEqual(unknown, xmlDefault);
     });
   });
 

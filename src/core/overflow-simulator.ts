@@ -61,7 +61,9 @@ export function simulateOverflow(
       prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: saved > 0 ? saved : 0 });
       remaining -= kept;
     }
-  } else if (strategy === 'remove-low-value' || strategy === 'combined') {
+  }
+  
+  if (strategy === 'remove-low-value' || (strategy === 'combined' && remaining > 0)) {
     const sorted = [...files].sort((a, b) => b.tokens - a.tokens);
     for (const file of sorted) {
       if (remaining <= 0) {
@@ -71,13 +73,19 @@ export function simulateOverflow(
         remaining -= file.tokens;
       }
     }
-  } else if (strategy === 'remove-boilerplate') {
+  }
+  
+  if (strategy === 'remove-boilerplate') {
+    prunedFiles.length = 0;
     for (const file of files) {
       const content = file.content || '';
       const boilerplateTokens = Math.ceil(content.split('\n').slice(0, 5).join('\n').length / 3.6);
       prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: boilerplateTokens });
     }
-  } else if (strategy === 'deduplicate') {
+  }
+  
+  if (strategy === 'deduplicate') {
+    prunedFiles.length = 0;
     for (const file of files) {
       prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: 0 });
     }

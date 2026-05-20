@@ -78,7 +78,7 @@ export function detectStaleReferences(content: string, filePath: string): Findin
       const todoMatch = line.match(TODO_PATTERN);
       const trimmed = line.trim();
       
-      if (!trimmed.slice(2).trim() || trimmed.slice(2). trim().length < 5) {
+      if (!trimmed.slice(2).trim() || trimmed.slice(2).trim().length <= 5) {
         findings.push({
           type: 'stale-reference', severity: 'medium', file: filePath,
           message: `Empty ${todoMatch![0].toUpperCase()}: "${trimmed}"`,
@@ -127,6 +127,15 @@ export function detectVerboseContent(content: string, filePath: string): Finding
       commentCount = 0;
       commentStart = -1;
     }
+  }
+  
+  // Check trailing comment block at end of file
+  if (commentCount >= 10) {
+    findings.push({
+      type: 'verbose', severity: 'medium', file: filePath,
+      message: `Long comment block (${commentCount} lines) at line ${commentStart + 1}`,
+      suggestion: 'Consider whether the entire comment block is necessary.',
+    });
   }
   
   return findings;
