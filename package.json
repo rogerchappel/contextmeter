@@ -1,0 +1,58 @@
+{
+  "name": "contextmeter",
+  "version": "0.1.0",
+  "description": "LLM context window analyzer and optimizer - see what's eating your tokens, find the waste, fix it.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "contextmeter": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "lint": "npx tsc --noEmit",
+    "check": "npx tsc --noEmit",
+    "smoke": "node --import tsx src/cli.ts count fixtures && node --import tsx src/cli.ts analyze fixtures && node --import tsx src/cli.ts simulate fixtures --limit 4000",
+    "package:smoke": "npm pack --dry-run",
+    "release:check": "npm run build && npm test && npm run package:smoke",
+    "prepare": "npm run build || true"
+  },
+  "keywords": [
+    "llm",
+    "context-window",
+    "token-counter",
+    "tiktoken",
+    "context-optimizer",
+    "ai",
+    "developer-tools"
+  ],
+  "author": "Roger Chappel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rogerchappel/contextmeter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rogerchappel/contextmeter/issues"
+  },
+  "homepage": "https://github.com/rogerchappel/contextmeter#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
