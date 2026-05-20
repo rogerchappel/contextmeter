@@ -162,3 +162,58 @@ export function detectDuplicates(files: { path: string; content: string }[]): { 
   
   return groups.sort((a, b) => b.tokenCount - a.tokenCount);
 }
+
+export function analyzeFile(filePath: string, content: string, tokens: number, language: string | null): FileAnalysis {
+  const findings = [...detectBoilerplate(content, filePath), ...detectStaleReferences(content, filePath), ...detectVerboseContent(content, filePath)];
+  return { path: filePath, tokens, findings };
+}
+
+export function analyzeContent(files: { path: string; content: string; tokens: number; language: string | null }[], totalTokens: number): AnalysisReport {
+  const allFindings: Finding[] = [];
+  const fileBreakdown = files.map(f => ({
+    path: f.path,
+    tokens: f.tokens,
+    percentage: totalTokens > 0 ? +(f.tokens / totalTokens * 100).toFixed(1) : 0,
+    language: f.language,
+  }));
+  
+  const duplicateGroups = detectDuplicates(files.map(f => ({ path: f.path, content: f.content })));
+  let boilerplateCount = 0;
+  let redundantTokenCount = 0;
+  
+  for (const file of files) {
+    const analysis = analyzeFile(file.path, file.content, file.tokens, file.language);
+    allFindings.push(...analysis.findings);
+    for (const f of analysis.findings) { if (f.type === 'boilerplate') boilerplateCount++; }
+  }
+  
+  // Add duplicate findings
+  for (const group of duplicateGroups) {
+    allFindings.push({
+      type: 'duplicate', severity: 'high', file: group.files[0],
+      message: `Content duplicated across ${group.files.length} files: "${group.content}"`,
+      suggestion: 'Shared content in multiple files. Consider extracting to a common module.',
+    });
+    redundantTokenCount += group.tokenCount * (group.files.length - 1);
+  }
+  
+  // Sort by severity
+  const severityOrder = { high: 0, medium: 1, low: 2 };
+  allFindings.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+  
+  // Generate suggestions
+  const suggestions: string[] = [];
+  if (duplicateGroups.length > 0) {
+    suggestions.push(`Found ${duplicateGroups.length} duplicate content groups. Deduplication could save tokens.`);
+  }
+  if (boilerplateCount > 0) {
+    suggestions.push(`Found ${boilerplateCount} boilerplate patterns. Consider minimizing or externalizing.`);
+  }
+  
+  fileBreakdown.sort((a, b) => b.tokens - a.tokens);
+  
+  return {
+    totalTokens, duplicateGroups, boilerplateCount, redundantTokenCount,
+    findings: allFindings, suggestions, fileBreakdown,
+  };
+}
