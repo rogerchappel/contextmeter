@@ -29,13 +29,8 @@
     "prepare": "npm run build || true"
   },
   "keywords": [
-    "llm",
-    "context-window",
-    "token-counter",
-    "tiktoken",
-    "context-optimizer",
-    "ai",
-    "developer-tools"
+    "llm", "context-window", "token-counter", "tiktoken",
+    "context-optimizer", "ai", "developer-tools"
   ],
   "author": "Roger Chappel",
   "license": "MIT",
@@ -43,13 +38,9 @@
     "type": "git",
     "url": "https://github.com/rogerchappel/contextmeter.git"
   },
-  "bugs": {
-    "url": "https://github.com/rogerchappel/contextmeter/issues"
-  },
+  "bugs": { "url": "https://github.com/rogerchappel/contextmeter/issues" },
   "homepage": "https://github.com/rogerchappel/contextmeter#readme",
-  "engines": {
-    "node": ">=18"
-  },
+  "engines": { "node": ">=18" },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
