@@ -34,3 +34,20 @@ function countWordTokens(word: string): number {
   if (word.length <= 12) return Math.ceil(word.length / 12);
   return Math.ceil(word.length / 8);
 }
+
+const RATIOS: Record<string, number> = {
+  'typescript': 1/3.5, 'javascript': 1/3.5, 'python': 1/3.4,
+  'go': 1/3.3, 'rust': 1/3.2, 'java': 1/3.4, 'c': 1/3.3, 'cpp': 1/3.3,
+  'cs': 1/3.4, 'ruby': 1/3.5, 'php': 1/3.6, 'swift': 1/3.3, 'kotlin': 1/3.3,
+  'sql': 1/3.8, 'html': 1/4.0, 'css': 1/3.7, 'json': 1/3.2, 'yaml': 1/3.5,
+  'markdown': 1/3.8, 'shell': 1/3.4, 'text': 1/3.8, 'prose': 1/4.0,
+  'xml': 1/4.2, 'toml': 1/3.5,
+};
+
+export function getTokensPerChar(language: string): number {
+  return RATIOS[language.toLowerCase()] ?? 1/3.6;
+}
+
+export function countTokensForLanguage(text: string, language: string): number {
+  return Math.ceil(text.length * getTokensPerChar(language));
+}
