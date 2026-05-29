@@ -21,12 +21,12 @@
     "build": "tsc",
     "build:watch": "tsc --watch",
     "test": "node --import tsx --test tests/**/*.test.ts",
-    "lint": "npx tsc --noEmit",
-    "check": "npx tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "check": "tsc --noEmit",
     "smoke": "node --import tsx src/cli.ts count fixtures && node --import tsx src/cli.ts analyze fixtures && node --import tsx src/cli.ts simulate fixtures --limit 4000",
     "package:smoke": "npm pack --dry-run",
     "release:check": "npm run build && npm test && npm run package:smoke",
-    "prepare": "npm run build || true"
+    "prepare": "npm run build"
   },
   "keywords": [
     "llm",

@@ -1,0 +1,46 @@
+{
+  "project": "contextmeter",
+  "status": "release-candidate",
+  "classification": "ship",
+  "waves": [
+    {
+      "name": "scaffold",
+      "status": "complete",
+      "deliverables": ["baseline project structure", "package metadata", "documentation"]
+    },
+    {
+      "name": "token-counter",
+      "status": "complete",
+      "deliverables": ["file token estimates", "language-specific ratios"]
+    },
+    {
+      "name": "content-analyzer",
+      "status": "complete",
+      "deliverables": ["duplicate detection", "boilerplate detection", "stale reference hints"]
+    },
+    {
+      "name": "overflow-simulator",
+      "status": "complete",
+      "deliverables": ["model presets", "custom token limits", "pruning strategies"]
+    },
+    {
+      "name": "release-readiness",
+      "status": "complete",
+      "deliverables": ["tests", "smoke scripts", "releasebox config", "release notes"]
+    }
+  ],
+  "verification": [
+    "npm test",
+    "npm run check",
+    "npm run build",
+    "npm run smoke",
+    "bash scripts/validate.sh",
+    "npm run release:check",
+    "releasebox check"
+  ],
+  "limitations": [
+    "Token counts are deterministic estimates rather than exact vendor tokenizer counts.",
+    "Analyzer findings are heuristic.",
+    "Overflow simulation does not rewrite files."
+  ]
+}

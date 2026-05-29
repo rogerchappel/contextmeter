@@ -1,6 +1,6 @@
 # PRD: contextmeter
 
-Status: in-progress
+Status: release-candidate
 
 ## Summary
 
