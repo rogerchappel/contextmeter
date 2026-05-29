@@ -8,6 +8,10 @@ import fs from 'node:fs';
 
 const VERSION = '0.1.0';
 
+function formatError(error: unknown): string {
+  return error instanceof Error ? `Error: ${error.message}` : String(error);
+}
+
 async function countCommand(path: string, json = false) {
   const stat = fs.statSync(path);
   let files: import('./utils/file-scanner.js').FileEntry[];
@@ -147,6 +151,55 @@ async function reportCommand(path: string, json = false) {
 const args = process.argv.slice(2);
 const command = args[0] || 'help';
 
+function pathArg(defaultPath = '.'): string {
+  for (let i = 1; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--limit' || arg === '--model') {
+      i++;
+      continue;
+    }
+    if (arg !== '--json' && !arg.startsWith('-')) return arg;
+  }
+  return defaultPath;
+}
+
+function flagValue(flag: string): string | undefined {
+  const idx = args.indexOf(flag);
+  if (idx < 0) return undefined;
+
+  const value = args[idx + 1];
+  if (!value || value.startsWith('-')) {
+    throw new Error(`${flag} requires a value.`);
+  }
+  return value;
+}
+
+function parseSimulationLimit(): string | number | undefined {
+  const rawLimit = flagValue('--limit');
+  const rawModel = flagValue('--model');
+
+  if (rawLimit && rawModel) {
+    throw new Error('Use either --limit or --model, not both.');
+  }
+
+  if (rawLimit) {
+    const parsed = Number(rawLimit);
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+      throw new Error('--limit must be a positive integer.');
+    }
+    return parsed;
+  }
+
+  if (rawModel) {
+    if (!CONTEXT_PRESETS[rawModel]) {
+      throw new Error(`Unknown model preset: ${rawModel}. Available presets: ${Object.keys(CONTEXT_PRESETS).join(', ')}`);
+    }
+    return rawModel;
+  }
+
+  return undefined;
+}
+
 function showHelp() {
   console.log(`Usage: contextmeter <command> [args]
 
@@ -164,25 +217,25 @@ Flags:
 ${VERSION}`);
 }
 
-if (command === 'count') {
-  countCommand(args[1] || '.', args.includes('--json')).catch(console.error);
-} else if (command === 'analyze') {
-  analyzeCommand(args[1] || '.', args.includes('--json')).catch(console.error);
-} else if (command === 'simulate') {
-  const limitIdx = args.indexOf('--limit');
-  const modelIdx = args.indexOf('--model');
-  let limitVal: string | number | undefined;
-  if (limitIdx >= 0 && args[limitIdx + 1]) limitVal = parseInt(args[limitIdx + 1], 10);
-  else if (modelIdx >= 0 && args[modelIdx + 1]) limitVal = args[modelIdx + 1];
-  simulateCommand(args[1] || '.', limitVal, args.includes('--json')).catch(console.error);
-} else if (command === 'report') {
-  reportCommand(args[1] || '.', args.includes('--json')).catch(console.error);
-} else if (command === '--version' || command === '-V' || command === '-v') {
-  console.log(`contextmeter v${VERSION}`);
-} else if (command === '--help' || command === '-h' || command === 'help') {
-  showHelp();
-} else {
-  console.error(`Unknown command: ${command}`);
-  console.error('Run contextmeter --help for usage information.');
-  process.exit(1);
+async function main() {
+  if (command === 'count') {
+    await countCommand(pathArg(), args.includes('--json'));
+  } else if (command === 'analyze') {
+    await analyzeCommand(pathArg(), args.includes('--json'));
+  } else if (command === 'simulate') {
+    await simulateCommand(pathArg(), parseSimulationLimit(), args.includes('--json'));
+  } else if (command === 'report') {
+    await reportCommand(pathArg(), args.includes('--json'));
+  } else if (command === '--version' || command === '-V' || command === '-v') {
+    console.log(`contextmeter v${VERSION}`);
+  } else if (command === '--help' || command === '-h' || command === 'help') {
+    showHelp();
+  } else {
+    throw new Error(`Unknown command: ${command}. Run contextmeter --help for usage information.`);
+  }
 }
+
+main().catch(error => {
+  console.error(formatError(error));
+  process.exitCode = 1;
+});

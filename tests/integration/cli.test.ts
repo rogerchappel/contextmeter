@@ -1,10 +1,22 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
-import { join } from 'node:path';
 
 const CLI = 'node --import tsx src/cli.ts';
 const FIXTURES = 'fixtures';
+
+function runCli(args: string): { status: number; stdout: string; stderr: string } {
+  try {
+    const stdout = execSync(`${CLI} ${args}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    return { status: 0, stdout, stderr: '' };
+  } catch (error: any) {
+    return {
+      status: error.status ?? 1,
+      stdout: error.stdout?.toString() ?? '',
+      stderr: error.stderr?.toString() ?? '',
+    };
+  }
+}
 
 describe('CLI Integration', () => {
   describe('count command', () => {
@@ -19,15 +31,20 @@ describe('CLI Integration', () => {
       assert.ok(typeof data.totalTokens === 'number');
       assert.ok(Array.isArray(data.files));
     });
+    it('defaults to current directory when only flags are provided', () => {
+      const output = execSync(`${CLI} count --json`, { encoding: 'utf8' });
+      const data = JSON.parse(output);
+      assert.ok(typeof data.totalTokens === 'number');
+      assert.ok(Array.isArray(data.files));
+    });
     it('counts a single file', () => {
       const output = execSync(`${CLI} count fixtures/codebase/simple.ts`, { encoding: 'utf8' });
       assert.ok(output.includes('tokens'));
     });
     it('fails on non-existent path', () => {
-      try {
-        execSync(`${CLI} count /nonexistent/path/abc123`, { encoding: 'utf8', stdio: 'pipe' });
-        assert.fail('should have thrown');
-      } catch { /* expected */ }
+      const result = runCli('count /nonexistent/path/abc123');
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stderr, /no such file or directory|ENOENT/);
     });
   });
 
@@ -60,10 +77,14 @@ describe('CLI Integration', () => {
       assert.ok(typeof data.totalTokens === 'number');
     });
     it('fails on unknown preset', () => {
-      try {
-        execSync(`${CLI} simulate ${FIXTURES} --model nonexistent_model_xyz`, { encoding: 'utf8', stdio: 'pipe' });
-        assert.fail('should have thrown');
-      } catch { /* expected */ }
+      const result = runCli(`simulate ${FIXTURES} --model nonexistent_model_xyz`);
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stderr, /Unknown model preset/);
+    });
+    it('fails on invalid token limits', () => {
+      const result = runCli(`simulate ${FIXTURES} --limit nope`);
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stderr, /positive integer/);
     });
   });
 
@@ -98,12 +119,9 @@ describe('CLI Integration', () => {
 
   describe('error handling', () => {
     it('handles unknown command', () => {
-      try {
-        execSync(`${CLI} bogus_command_xyz`, { encoding: 'utf8', stdio: 'pipe' });
-        assert.fail('should have thrown for unknown command');
-      } catch (e: any) {
-        assert.ok(e.status !== 0, 'unknown command should fail');
-      }
+      const result = runCli('bogus_command_xyz');
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stderr, /Unknown command/);
     });
   });
 });
