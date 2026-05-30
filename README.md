@@ -15,15 +15,13 @@ When you paste a codebase into an LLM, every token counts. ContextMeter tells yo
 
 ## Installation
 
-```bash
+```sh
 npm install -g contextmeter
-# or
-pnpm add -g contextmeter
 ```
 
 ## Quick Start
 
-```bash
+```sh
 # Count tokens in your project
 contextmeter count .
 
@@ -34,6 +32,8 @@ contextmeter analyze .
 contextmeter simulate . --model gpt-4
 contextmeter simulate . --limit 16384
 ```
+
+For automation, add `--json` to `count`, `analyze`, `simulate`, or `report`.
 
 ## Commands
 
@@ -79,12 +79,12 @@ When context overflows, ContextMeter simulates different approaches:
 
 ## Development
 
-```bash
+```sh
 git clone https://github.com/rogerchappel/contextmeter.git
 cd contextmeter
-pnpm install
-pnpm test
-pnpm run build
+npm install
+npm test
+npm run release:check
 ```
 
 ## License
