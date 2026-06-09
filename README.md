@@ -87,6 +87,19 @@ npm test
 npm run release:check
 ```
 
+## Development
+
+Run the same checks maintainers use before opening a PR:
+
+```sh
+npm test
+npm run check
+npm run lint
+npm run build
+npm run smoke
+npm run package:smoke
+npm run release:check
+```
 ## License
 
 MIT — see [LICENSE](LICENSE)
