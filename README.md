@@ -10,7 +10,7 @@ When you paste a codebase into an LLM, every token counts. ContextMeter tells yo
 
 - **How many tokens** your files will consume (tiktoken-compatible estimation)
 - **Where redundancy lives** — duplicate content across files
-- **What to trim first** — boilerplate, long comments, stale TODOs
+- **What to trim first** — boilerplate, long comments, and stale maintenance markers
 - **If it fits** — simulate overflow against any model's context window
 
 ## Installation
@@ -84,15 +84,6 @@ git clone https://github.com/rogerchappel/contextmeter.git
 cd contextmeter
 npm install
 npm test
-npm run release:check
-```
-
-## Development
-
-Run the same checks maintainers use before opening a PR:
-
-```sh
-npm test
 npm run check
 npm run lint
 npm run build
@@ -100,6 +91,10 @@ npm run smoke
 npm run package:smoke
 npm run release:check
 ```
+
+`release:check` builds the TypeScript CLI, runs the fixture-backed tests and
+smoke commands, and finishes with `npm pack --dry-run` so package contents stay
+visible before tagging or publishing.
 ## License
 
 MIT — see [LICENSE](LICENSE)
