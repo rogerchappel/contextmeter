@@ -77,6 +77,14 @@ When context overflows, ContextMeter simulates different approaches:
 - **remove-boilerplate** — Strip license headers and generated comments
 - **deduplicate** — Account for shared content across files
 
+## Limitations and Safety
+
+ContextMeter is a planning tool, not an exact tokenizer for every provider or
+model version. Token counts are estimates, model presets can change, and command
+output may include local file paths or repository details. Review
+[accuracy and safety notes](docs/accuracy-and-safety.md) before using results as
+a release gate or sharing JSON output outside the repository.
+
 ## Development
 
 ```sh
