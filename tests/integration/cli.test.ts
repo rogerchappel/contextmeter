@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 
 const CLI = 'node --import tsx src/cli.ts';
 const FIXTURES = 'fixtures';
@@ -19,6 +20,17 @@ function runCli(args: string): { status: number; stdout: string; stderr: string 
 }
 
 describe('CLI Integration', () => {
+  describe('package release contents', () => {
+    it('keeps linked docs and fixtures in the npm allowlist', () => {
+      const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+
+      assert.ok(pkg.files.includes('docs'));
+      assert.ok(pkg.files.includes('fixtures'));
+      assert.ok(existsSync('docs/accuracy-and-safety.md'));
+      assert.ok(existsSync('fixtures/codebase/simple.ts'));
+    });
+  });
+
   describe('count command', () => {
     it('counts tokens in fixtures directory', () => {
       const output = execSync(`${CLI} count ${FIXTURES}`, { encoding: 'utf8' });
