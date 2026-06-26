@@ -2,6 +2,8 @@
 
 ### Highlights
 
+- Maintenance: Add accuracy and safety notes for token estimates and shared
+  output.
 - Maintenance: Document release candidate readiness.
 - Fixes: Fail cli errors with nonzero status.
 - Features: Add smoke test script for real codebase analysis.
@@ -10,6 +12,8 @@
 
 ### Changes
 
+- Maintenance: Add accuracy and safety notes for token estimates and shared
+  output. (pending)
 - Features: Add smoke test script for real codebase analysis. (2ba5c93)
 - Features: Add example fixture directories with sample prompts and configs. (2272bbf)
 - Features: Wire up analyze, simulate, and report CLI commands. (b44fdc1)
@@ -34,4 +38,3 @@
 ### Contributors
 
 - Roger Chappel
-
