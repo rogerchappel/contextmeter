@@ -4,6 +4,20 @@
 
 **ContextMeter** is a CLI tool that helps you understand how much of an LLM's context window your codebase consumes. It identifies duplication, boilerplate, and verbose content so you can trim your files into context more efficiently.
 
+
+## Quickstart
+
+Run the tool from a fresh checkout:
+
+```sh
+npm install
+npm run build
+node dist/cli.js --help
+npm test
+```
+
+The help command is a quick smoke test for the CLI entrypoint, and `npm test` runs the committed regression suite before you depend on the output.
+
 ## Why?
 
 When you paste a codebase into an LLM, every token counts. ContextMeter tells you:
