@@ -28,7 +28,7 @@
     "lint": "tsc --noEmit",
     "check": "tsc --noEmit",
     "smoke": "node --import tsx src/cli.ts count fixtures && node --import tsx src/cli.ts analyze fixtures && node --import tsx src/cli.ts simulate fixtures --limit 4000",
-    "package:smoke": "npm pack --dry-run",
+    "package:smoke": "node scripts/package-smoke.mjs",
     "release:check": "npm run check && npm run build && npm test && npm run smoke && npm run package:smoke",
     "prepare": "npm run build"
   },
