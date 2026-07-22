@@ -64,13 +64,14 @@ export function simulateOverflow(
   }
   
   if (strategy === 'remove-low-value' || (strategy === 'combined' && remaining > 0)) {
-    const sorted = [...files].sort((a, b) => b.tokens - a.tokens);
+    const sorted = [...files].sort((a, b) => a.tokens - b.tokens);
+    let afterPruning = totalTokens;
     for (const file of sorted) {
-      if (remaining <= 0) {
+      if (afterPruning > limit) {
         prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: file.tokens });
+        afterPruning -= file.tokens;
       } else {
         prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: 0 });
-        remaining -= file.tokens;
       }
     }
   }

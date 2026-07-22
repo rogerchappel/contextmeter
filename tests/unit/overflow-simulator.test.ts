@@ -53,6 +53,17 @@ describe('OverflowSimulator', () => {
       const result = simulateOverflow(files, 100, 'remove-low-value');
       assert.ok(result.prunedFiles.some(f => f.savedTokens === f.originalTokens));
     });
+    it('remove low value removes the smallest files needed to fit', () => {
+      const files = [{ path: 'large.ts', tokens: 80 }, { path: 'small.ts', tokens: 30 }];
+      const result = simulateOverflow(files, 100, 'remove-low-value');
+      assert.strictEqual(result.saved, 30);
+      assert.strictEqual(result.afterPruning, 80);
+      assert.strictEqual(result.fits, true);
+      assert.deepStrictEqual(result.prunedFiles, [
+        { path: 'small.ts', originalTokens: 30, savedTokens: 30 },
+        { path: 'large.ts', originalTokens: 80, savedTokens: 0 },
+      ]);
+    });
     it('deduplicate strategy handles duplicate groups', () => {
       const files = [{ path: 'a.ts', tokens: 300 }];
       const result = simulateOverflow(files, 100, 'deduplicate');
