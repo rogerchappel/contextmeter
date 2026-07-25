@@ -62,14 +62,20 @@ export interface FileEntry {
 export function scanDirectory(dirPath: string, excludes: string[] = []): FileEntry[] {
   const results: FileEntry[] = [];
   const resolvedDir = resolve(dirPath);
+  const ignoreRules = excludes.map(compileIgnoreRule).filter(rule => rule !== null);
+  const hasNegations = ignoreRules.some(rule => rule.negated);
   function scan(currentPath: string) {
     const entries = readdirSync(currentPath, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = join(currentPath, entry.name);
       const relativePath = fullPath.replace(resolvedDir + '/', '');
-      if (shouldExclude(relativePath, excludes)) continue;
-      if (entry.isDirectory()) { scan(fullPath); }
+      const excluded = shouldExclude(relativePath, entry.isDirectory(), ignoreRules);
+      if (entry.isDirectory()) {
+        // A later negation may restore a descendant of an ignored directory.
+        if (!excluded || hasNegations) scan(fullPath);
+      }
       else if (entry.isFile()) {
+        if (excluded) continue;
         const binary = isBinary(fullPath);
         const language = getLanguage(fullPath);
         let content: string | undefined; let size = 0;
@@ -85,27 +91,67 @@ export function scanDirectory(dirPath: string, excludes: string[] = []): FileEnt
   return results;
 }
 
-function shouldExclude(relativePath: string, excludes: string[]): boolean {
-  for (const pattern of excludes) {
-    if (matchesGlob(relativePath, pattern)) return true;
-  }
-  return false;
+interface IgnoreRule {
+  negated: boolean;
+  regex: RegExp;
 }
 
-function matchesGlob(path: string, pattern: string): boolean {
-  if (!pattern.includes('/') && !pattern.includes('*')) {
-    return path.split('/').includes(pattern);
+function shouldExclude(relativePath: string, isDirectory: boolean, rules: IgnoreRule[]): boolean {
+  let excluded = false;
+  const candidate = isDirectory ? `${relativePath}/` : relativePath;
+  for (const rule of rules) {
+    if (rule.regex.test(candidate)) excluded = !rule.negated;
   }
-  const regexPattern = pattern
-    .replace(/\*\*/g, '__DOUBLESTAR__').replace(/\*/g, '[^/]*')
-    .replace(/__DOUBLESTAR__/g, '.*').replace(/\?/g, '[^/]');
-  return new RegExp(`^${regexPattern}$`).test(path);
+  return excluded;
+}
+
+function compileIgnoreRule(rawPattern: string): IgnoreRule | null {
+  let pattern = rawPattern;
+  let negated = false;
+  if (pattern.startsWith('\\!')) pattern = pattern.slice(1);
+  else if (pattern.startsWith('!')) {
+    negated = true;
+    pattern = pattern.slice(1);
+  }
+  if (pattern.length === 0) return null;
+
+  const anchored = pattern.startsWith('/');
+  if (anchored) pattern = pattern.slice(1);
+  const directoryOnly = pattern.endsWith('/');
+  if (directoryOnly) pattern = pattern.slice(0, -1);
+  const hasSlash = pattern.includes('/');
+  const prefix = anchored || hasSlash ? '^' : '(?:^|/)';
+  const suffix = directoryOnly ? '/(?:.*)?$' : '(?:/.*)?$';
+  return { negated, regex: new RegExp(prefix + globToRegex(pattern) + suffix) };
+}
+
+function globToRegex(pattern: string): string {
+  let result = '';
+  for (let index = 0; index < pattern.length; index++) {
+    const character = pattern[index];
+    if (character === '*') {
+      if (pattern[index + 1] === '*') {
+        while (pattern[index + 1] === '*') index++;
+        result += '.*';
+      } else {
+        result += '[^/]*';
+      }
+    } else if (character === '?') {
+      result += '[^/]';
+    } else {
+      result += character.replace(/[|\\{}()[\]^$+?.]/g, '\\$&');
+    }
+  }
+  return result;
 }
 
 export function loadGitignore(dirPath: string): string[] {
   try {
     const content = readFileSync(join(dirPath, '.gitignore'), 'utf-8');
-    return content.split('\n').map(l => l.trim()).filter(l => l.length > 0 && !l.startsWith('#'));
+    return content.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && !line.startsWith('#'))
+      .map(line => line.startsWith('\\#') ? line.slice(1) : line);
   } catch { return []; }
 }
 

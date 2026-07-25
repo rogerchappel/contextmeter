@@ -101,7 +101,10 @@ describe('FileScanner', () => {
           ...DEFAULT_EXCLUDES,
           ...loadGitignore(projectPath),
         ]);
-        assert.deepStrictEqual(files.map(file => file.relativePath).sort(), ['visible.ts']);
+        assert.deepStrictEqual(files.map(file => file.relativePath).sort(), [
+          '.gitignore',
+          'visible.ts',
+        ]);
       });
     });
 
@@ -127,6 +130,7 @@ describe('FileScanner', () => {
           ...loadGitignore(projectPath),
         ]);
         assert.deepStrictEqual(files.map(file => file.relativePath).sort(), [
+          '.gitignore',
           'generated/keep.ts',
           'nested/root-only.ts',
           'src/main.ts',
