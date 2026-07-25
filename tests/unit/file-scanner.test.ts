@@ -1,7 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, unlinkSync } from 'node:fs';
-import { getLanguage, isBinary, DEFAULT_EXCLUDES } from '../../src/utils/file-scanner.js';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import {
+  getLanguage, isBinary, scanDirectory, loadGitignore, DEFAULT_EXCLUDES,
+} from '../../src/utils/file-scanner.js';
 
 describe('FileScanner', () => {
   describe('getLanguage', () => {
@@ -66,6 +70,72 @@ describe('FileScanner', () => {
     it('excludes minified files', () => {
       assert.ok(DEFAULT_EXCLUDES.includes('*.min.js'));
       assert.ok(DEFAULT_EXCLUDES.includes('*.min.css'));
+    });
+  });
+
+  describe('gitignore patterns', () => {
+    function withProject(
+      files: Record<string, string>,
+      test: (projectPath: string) => void,
+    ): void {
+      const projectPath = mkdtempSync(join(tmpdir(), 'contextmeter-ignore-'));
+      try {
+        for (const [relativePath, content] of Object.entries(files)) {
+          const filePath = join(projectPath, relativePath);
+          mkdirSync(join(filePath, '..'), { recursive: true });
+          writeFileSync(filePath, content);
+        }
+        test(projectPath);
+      } finally {
+        rmSync(projectPath, { recursive: true, force: true });
+      }
+    }
+
+    it('excludes a directory pattern and everything below it', () => {
+      withProject({
+        '.gitignore': 'ignored/\n',
+        'ignored/secret.ts': 'export const secret = true;\n',
+        'visible.ts': 'export const visible = true;\n',
+      }, projectPath => {
+        const files = scanDirectory(projectPath, [
+          ...DEFAULT_EXCLUDES,
+          ...loadGitignore(projectPath),
+        ]);
+        assert.deepStrictEqual(files.map(file => file.relativePath).sort(), [
+          '.gitignore',
+          'visible.ts',
+        ]);
+      });
+    });
+
+    it('supports file, anchored, glob, and ordered negation patterns', () => {
+      withProject({
+        '.gitignore': [
+          '*.log',
+          '/root-only.ts',
+          'generated/**',
+          '!generated/keep.ts',
+          '',
+        ].join('\n'),
+        'app.log': 'ignored\n',
+        'nested/app.log': 'ignored\n',
+        'root-only.ts': 'ignored\n',
+        'nested/root-only.ts': 'kept\n',
+        'generated/drop.ts': 'ignored\n',
+        'generated/keep.ts': 'kept\n',
+        'src/main.ts': 'kept\n',
+      }, projectPath => {
+        const files = scanDirectory(projectPath, [
+          ...DEFAULT_EXCLUDES,
+          ...loadGitignore(projectPath),
+        ]);
+        assert.deepStrictEqual(files.map(file => file.relativePath).sort(), [
+          '.gitignore',
+          'generated/keep.ts',
+          'nested/root-only.ts',
+          'src/main.ts',
+        ]);
+      });
     });
   });
 });

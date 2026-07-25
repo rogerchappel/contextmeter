@@ -20,3 +20,16 @@ directional rather than an exact bill of materials for any specific model API.
   requests, chat systems, or external tools.
 - Use repository-level ignores to keep secrets, generated artifacts, and
   private customer data out of scans.
+
+## Ignore Rules
+
+Directory scans apply ContextMeter's built-in generated/dependency exclusions
+and the `.gitignore` in the scanned directory. File names, directory patterns
+ending in `/`, root-anchored patterns beginning with `/`, `*`, `**`, `?`, and
+ordered `!` negations are supported. A later negation can restore a file below
+an ignored directory.
+
+ContextMeter reads only the `.gitignore` at the scan root. It does not currently
+combine nested `.gitignore` files, global Git excludes, or `.git/info/exclude`,
+and it does not implement character-class (`[abc]`) patterns. Review scan output
+when a repository relies on those features.
