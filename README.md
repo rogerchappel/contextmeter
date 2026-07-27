@@ -85,8 +85,8 @@ TypeScript, JavaScript, Python, Go, Rust, Java, C, C++, Ruby, PHP, Swift, Kotlin
 
 When context overflows, ContextMeter simulates different approaches:
 
-- **combined** — Proportional truncation + low-value removal (default)
-- **truncate** — Proportionally reduce every file
+- **combined** — Truncate files against the remaining context budget, then remove low-value files when budget remains (default)
+- **truncate** — Reduce each file according to the remaining context budget
 - **remove-low-value** — Remove smallest files first
 - **remove-boilerplate** — Strip license headers and generated comments
 - **deduplicate** — Account for shared content across files
