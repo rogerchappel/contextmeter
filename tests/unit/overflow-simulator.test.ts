@@ -14,6 +14,10 @@ describe('OverflowSimulator', () => {
       const files = [{ path: 'a.ts', tokens: 500 }];
       const result = simulateOverflow(files, 500);
       assert.strictEqual(result.fits, true);
+      assert.strictEqual(result.overflows, false);
+      assert.strictEqual(result.saved, 0);
+      assert.strictEqual(result.afterPruning, 500);
+      assert.deepStrictEqual(result.prunedFiles, []);
     });
   });
 
