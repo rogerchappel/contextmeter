@@ -14,6 +14,10 @@ describe('OverflowSimulator', () => {
       const files = [{ path: 'a.ts', tokens: 500 }];
       const result = simulateOverflow(files, 500);
       assert.strictEqual(result.fits, true);
+      assert.strictEqual(result.overflows, false);
+      assert.strictEqual(result.saved, 0);
+      assert.strictEqual(result.afterPruning, 500);
+      assert.deepStrictEqual(result.prunedFiles, []);
     });
   });
 
@@ -42,6 +46,42 @@ describe('OverflowSimulator', () => {
       const files = [{ path: 'a.ts', tokens: 300, content: 'const x = 42;' }];
       const result = simulateOverflow(files, 100, 'combined');
       assert.ok(result.prunedFiles.length >= 1);
+    });
+    it('combined strategy bounds savings after an oversized leading file', () => {
+      const result = simulateOverflow([
+        { path: 'large.ts', tokens: 200 },
+        { path: 'small.ts', tokens: 1 },
+      ], 100, 'combined');
+
+      assert.deepStrictEqual(result.prunedFiles, [
+        { path: 'large.ts', originalTokens: 200, savedTokens: 0 },
+        { path: 'small.ts', originalTokens: 1, savedTokens: 1 },
+      ]);
+      assert.strictEqual(result.saved, 1);
+      assert.strictEqual(result.afterPruning, 200);
+      assert.strictEqual(result.fits, false);
+      assert.ok(result.suggestions.some(suggestion => suggestion.includes('100 more tokens')));
+    });
+    it('combined strategy preserves aggregate invariants in either file order', () => {
+      const files = [
+        { path: 'large.ts', tokens: 200 },
+        { path: 'medium.ts', tokens: 60 },
+        { path: 'small.ts', tokens: 1 },
+      ];
+
+      for (const orderedFiles of [files, [...files].reverse()]) {
+        const result = simulateOverflow(orderedFiles, 100, 'combined');
+        const boundedSavings = result.prunedFiles.reduce((total, file) => {
+          assert.ok(Number.isInteger(file.savedTokens));
+          assert.ok(file.savedTokens >= 0);
+          assert.ok(file.savedTokens <= file.originalTokens);
+          return total + file.savedTokens;
+        }, 0);
+
+        assert.strictEqual(result.saved, boundedSavings);
+        assert.strictEqual(result.afterPruning, result.totalTokens - boundedSavings);
+        assert.strictEqual(result.fits, result.afterPruning <= result.limit);
+      }
     });
     it('remove boilerplate saves estimated tokens', () => {
       const files = [{ path: 'a.ts', tokens: 300, content: '// MIT License\n' + 'x'.repeat(100) }];
