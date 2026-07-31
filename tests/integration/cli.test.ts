@@ -71,6 +71,15 @@ describe('CLI Integration', () => {
       const data = JSON.parse(output);
       assert.ok(Array.isArray(data.findings));
     });
+    it('analyzes a single file in text and JSON formats', () => {
+      const path = 'fixtures/codebase/simple.ts';
+      const output = execSync(`${CLI} analyze ${path}`, { encoding: 'utf8' });
+      assert.ok(output.includes('Files analyzed: 1'));
+
+      const data = JSON.parse(execSync(`${CLI} analyze ${path} --json`, { encoding: 'utf8' }));
+      assert.equal(data.totalTokens, data.fileBreakdown[0].tokens);
+      assert.equal(data.fileBreakdown[0].path, path);
+    });
   });
 
   describe('simulate command', () => {
@@ -87,6 +96,18 @@ describe('CLI Integration', () => {
       const output = execSync(`${CLI} simulate ${FIXTURES} --limit 4000 --json`, { encoding: 'utf8' });
       const data = JSON.parse(output);
       assert.ok(typeof data.totalTokens === 'number');
+    });
+    it('simulates a single file in text and JSON formats', () => {
+      const path = 'fixtures/codebase/simple.ts';
+      const output = execSync(`${CLI} simulate ${path} --limit 4000`, { encoding: 'utf8' });
+      assert.ok(output.includes('ContextMeter - Overflow Simulation'));
+
+      const data = JSON.parse(execSync(`${CLI} simulate ${path} --limit 4000 --json`, { encoding: 'utf8' }));
+      assert.equal(data.limit, 4000);
+      assert.ok(data.totalTokens > 0);
+      assert.equal(data.afterPruning, data.totalTokens);
+      assert.equal(data.fits, true);
+      assert.ok(Array.isArray(data.prunedFiles));
     });
     it('fails on unknown preset', () => {
       const result = runCli(`simulate ${FIXTURES} --model nonexistent_model_xyz`);
@@ -126,6 +147,16 @@ describe('CLI Integration', () => {
       const output = execSync(`${CLI} report ${FIXTURES} --json`, { encoding: 'utf8' });
       const data = JSON.parse(output);
       assert.ok(typeof data.totalTokens === 'number');
+    });
+    it('reports on a single file in text and JSON formats', () => {
+      const path = 'fixtures/codebase/simple.ts';
+      const output = execSync(`${CLI} report ${path}`, { encoding: 'utf8' });
+      assert.ok(output.includes('Files: 1 (0 binary skipped)'));
+
+      const data = JSON.parse(execSync(`${CLI} report ${path} --json`, { encoding: 'utf8' }));
+      assert.equal(data.totalTokens, data.tokenCount);
+      assert.equal(data.analysis.fileBreakdown.length, 1);
+      assert.equal(data.analysis.fileBreakdown[0].path, path);
     });
   });
 
