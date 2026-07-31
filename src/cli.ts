@@ -7,22 +7,30 @@ import { getLanguage } from './utils/file-scanner.js';
 import fs from 'node:fs';
 
 const VERSION = '0.1.0';
+type FileEntry = import('./utils/file-scanner.js').FileEntry;
 
 function formatError(error: unknown): string {
   return error instanceof Error ? `Error: ${error.message}` : String(error);
 }
 
-async function countCommand(path: string, json = false) {
+function scanPath(path: string): FileEntry[] {
   const stat = fs.statSync(path);
-  let files: import('./utils/file-scanner.js').FileEntry[];
   if (stat.isFile()) {
     const content = fs.readFileSync(path, 'utf-8');
-    const language = getLanguage(path);
-    const relPath = path;
-    files = [{ path, relativePath: relPath, language, content, isBinary: false, size: content.length }];
-  } else {
-    files = scanDirectory(path, [...DEFAULT_EXCLUDES, ...(loadGitignore(path))]);
+    return [{
+      path,
+      relativePath: path,
+      language: getLanguage(path),
+      content,
+      isBinary: false,
+      size: content.length,
+    }];
   }
+  return scanDirectory(path, [...DEFAULT_EXCLUDES, ...loadGitignore(path)]);
+}
+
+async function countCommand(path: string, json = false) {
+  const files = scanPath(path);
   const textFiles = files.filter(f => !f.isBinary && f.content !== undefined);
   let totalTokens = 0;
   const fileTokens = textFiles.map(f => {
@@ -47,7 +55,7 @@ async function countCommand(path: string, json = false) {
 }
 
 async function analyzeCommand(path: string, json = false) {
-  const files = scanDirectory(path, [...DEFAULT_EXCLUDES, ...(loadGitignore(path))]);
+  const files = scanPath(path);
   const textFiles = files.filter(f => !f.isBinary && f.content !== undefined);
   const fileData = textFiles.map(f => ({
     path: f.relativePath,
@@ -89,7 +97,7 @@ async function analyzeCommand(path: string, json = false) {
 }
 
 async function simulateCommand(path: string, limitOrModel: string | number | undefined, json = false) {
-  const files = scanDirectory(path, [...DEFAULT_EXCLUDES, ...(loadGitignore(path))]);
+  const files = scanPath(path);
   const textFiles = files.filter(f => !f.isBinary && f.content !== undefined);
   const fileData = textFiles.map(f => ({
     path: f.relativePath,
@@ -126,7 +134,7 @@ async function simulateCommand(path: string, limitOrModel: string | number | und
 }
 
 async function reportCommand(path: string, json = false) {
-  const files = scanDirectory(path, [...DEFAULT_EXCLUDES, ...(loadGitignore(path))]);
+  const files = scanPath(path);
   const textFiles = files.filter(f => !f.isBinary && f.content !== undefined);
   const fileData = textFiles.map(f => ({
     path: f.relativePath,
@@ -205,9 +213,9 @@ function showHelp() {
 
 Commands:
   count <path>              Count tokens in a file or directory
-  analyze <path>            Analyze content for redundancy
-  simulate <path> [--limit N|--model name]  Simulate context window overflow
-  report <path>             Full report with token count, analysis, and simulation
+  analyze <path>            Analyze a file or directory for redundancy
+  simulate <path> [--limit N|--model name]  Simulate file or directory context overflow
+  report <path>             Report on a file or directory
 
 Flags:
   --json            Output results as JSON
