@@ -54,9 +54,9 @@ For automation, add `--json` to `count`, `analyze`, `simulate`, or `report`.
 | Command | Description |
 |---------|-------------|
 | `count <path>` | Count tokens across a file or directory |
-| `analyze <path>` | Analyze for redundancy, boilerplate, and stale references |
-| `simulate <path>` | Simulate context window overflow with pruning strategies |
-| `report <path>` | Combined report: token count + analysis + simulation |
+| `analyze <path>` | Analyze a file or directory for redundancy, boilerplate, and stale references |
+| `simulate <path>` | Simulate context window overflow for a file or directory |
+| `report <path>` | Combined report for a file or directory: token count + analysis + simulation |
 
 ## Flags
 
