@@ -78,7 +78,8 @@ async function analyzeCommand(path: string, json = false) {
     console.log('\nFindings:');
     for (const f of report.findings) {
       const icon = f.severity === 'high' ? '[!]' : f.severity === 'medium' ? '[~]' : '[.]';
-      console.log(`  ${icon} [${f.type}] ${f.file} - ${f.message}`);
+      const location = f.line === undefined ? f.file : `${f.file}:${f.line}`;
+      console.log(`  ${icon} [${f.type}] ${location} - ${f.message}`);
       console.log(`     -> ${f.suggestion}`);
     }
     if (report.suggestions.length > 0) {
