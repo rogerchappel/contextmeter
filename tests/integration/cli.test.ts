@@ -71,6 +71,16 @@ describe('CLI Integration', () => {
       const data = JSON.parse(output);
       assert.ok(Array.isArray(data.findings));
     });
+    it('renders repeated stale references with stable source lines', () => {
+      const path = 'fixtures/codebase/config.ts';
+      const output = execSync(`${CLI} analyze ${path}`, { encoding: 'utf8' });
+      assert.ok(output.includes(`${path}:37`));
+      assert.ok(output.includes(`${path}:70`));
+
+      const data = JSON.parse(execSync(`${CLI} analyze ${path} --json`, { encoding: 'utf8' }));
+      const stale = data.findings.filter((finding: { type: string }) => finding.type === 'stale-reference');
+      assert.deepStrictEqual(stale.map((finding: { line: number }) => finding.line), [37, 70]);
+    });
     it('analyzes a single file in text and JSON formats', () => {
       const path = 'fixtures/codebase/simple.ts';
       const output = execSync(`${CLI} analyze ${path}`, { encoding: 'utf8' });
