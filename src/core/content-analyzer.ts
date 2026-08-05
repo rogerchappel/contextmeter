@@ -4,6 +4,7 @@ export interface Finding {
   type: 'duplicate' | 'boilerplate' | 'verbose' | 'stale-reference';
   severity: 'high' | 'medium' | 'low';
   file: string;
+  line?: number;
   message: string;
   suggestion: string;
 }
@@ -74,25 +75,26 @@ export function detectStaleReferences(content: string, filePath: string): Findin
   
   for (const match of content.matchAll(/\/\/.*$/gm)) {
     const line = match[0];
+    const lineNumber = content.slice(0, match.index).split('\n').length;
     if (TODO_PATTERN.test(line)) {
       const todoMatch = line.match(TODO_PATTERN);
       const trimmed = line.trim();
       
       if (!trimmed.slice(2).trim() || trimmed.slice(2).trim().length <= 5) {
         findings.push({
-          type: 'stale-reference', severity: 'medium', file: filePath,
+          type: 'stale-reference', severity: 'medium', file: filePath, line: lineNumber,
           message: `Empty ${todoMatch![0].toUpperCase()}: "${trimmed}"`,
           suggestion: 'Either add description or remove this marker.',
         });
       } else if (/\bworkaround\b/i.test(trimmed)) {
         findings.push({
-          type: 'stale-reference', severity: 'high', file: filePath,
+          type: 'stale-reference', severity: 'high', file: filePath, line: lineNumber,
           message: `Found Workaround: "${trimmed}"`,
           suggestion: 'Review and either resolve or remove this TODO.',
         });
       } else if (DATED_PATTERN.test(trimmed)) {
         findings.push({
-          type: 'stale-reference', severity: 'high', file: filePath,
+          type: 'stale-reference', severity: 'high', file: filePath, line: lineNumber,
           message: `Found Dated TODO: "${trimmed}"`,
           suggestion: 'Review and either resolve or remove this TODO.',
         });

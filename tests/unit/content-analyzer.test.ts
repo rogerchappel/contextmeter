@@ -83,6 +83,14 @@ describe('ContentAnalyzer', () => {
       const findings = detectStaleReferences(content, 'test.ts');
       assert.ok(findings.some(f => f.message.includes('Dated')));
     });
+    it('distinguishes repeated dated TODOs by source line', () => {
+      const todo = '// TODO fix this before January 2024 - we need to refactor';
+      const findings = detectStaleReferences(`${todo}\nconst active = true;\n${todo}`, 'test.ts');
+
+      assert.deepStrictEqual(findings.map(f => f.line), [1, 3]);
+      assert.strictEqual(findings.length, 2);
+      assert.notStrictEqual(`${findings[0].file}:${findings[0].line}`, `${findings[1].file}:${findings[1].line}`);
+    });
   });
 
   describe('analyzeContent', () => {
