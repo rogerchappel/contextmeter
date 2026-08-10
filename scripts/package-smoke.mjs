@@ -8,6 +8,12 @@ const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
 const [pack] = JSON.parse(output);
 const packedFiles = new Set(pack.files.map((file) => file.path));
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
+const readme = readFileSync('README.md', 'utf8');
+
+if (/npm install (?:--global|-g) contextmeter/.test(readme)) {
+  console.error('Package smoke failed; README advertises npm installation while npm publishing is disabled.');
+  process.exit(1);
+}
 
 const requiredFiles = [
   'package.json',
