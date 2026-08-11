@@ -176,5 +176,37 @@ describe('CLI Integration', () => {
       assert.notStrictEqual(result.status, 0);
       assert.match(result.stderr, /Unknown command/);
     });
+    it('rejects unknown options, extra paths, and command-specific options', () => {
+      for (const invocation of [
+        `count ${FIXTURES} --bogus`,
+        `count ${FIXTURES} unexpected`,
+        `count ${FIXTURES} --limit 1`,
+      ]) {
+        const result = runCli(invocation);
+        assert.notStrictEqual(result.status, 0, invocation);
+        assert.match(result.stderr, /usage information/i);
+      }
+    });
+    it('rejects duplicate flags and missing flag values', () => {
+      for (const invocation of [
+        `count ${FIXTURES} --json --json`,
+        `simulate ${FIXTURES} --limit`,
+        `simulate ${FIXTURES} --model`,
+      ]) {
+        const result = runCli(invocation);
+        assert.notStrictEqual(result.status, 0, invocation);
+        assert.match(result.stderr, /usage information/i);
+      }
+    });
+    it('requires exactly one simulation limit selector', () => {
+      for (const invocation of [
+        `simulate ${FIXTURES}`,
+        `simulate ${FIXTURES} --limit 4000 --model gpt-4`,
+      ]) {
+        const result = runCli(invocation);
+        assert.notStrictEqual(result.status, 0, invocation);
+        assert.match(result.stderr, /exactly one|not both/i);
+      }
+    });
   });
 });

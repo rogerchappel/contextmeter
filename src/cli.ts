@@ -160,53 +160,78 @@ async function reportCommand(path: string, json = false) {
 const args = process.argv.slice(2);
 const command = args[0] || 'help';
 
-function pathArg(defaultPath = '.'): string {
+interface ParsedCommandArgs {
+  path: string;
+  json: boolean;
+  limitOrModel?: string | number;
+}
+
+function usageError(message: string): Error {
+  return new Error(`${message}\nRun contextmeter --help for usage information.`);
+}
+
+function parseCommandArgs(commandName: string): ParsedCommandArgs {
+  const positionals: string[] = [];
+  const seen = new Set<string>();
+  let json = false;
+  let rawLimit: string | undefined;
+  let rawModel: string | undefined;
+
   for (let i = 1; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--limit' || arg === '--model') {
-      i++;
+    if (!arg.startsWith('-')) {
+      positionals.push(arg);
       continue;
     }
-    if (arg !== '--json' && !arg.startsWith('-')) return arg;
+    if (!['--json', '--limit', '--model'].includes(arg)) {
+      throw usageError(`Unknown option for ${commandName}: ${arg}.`);
+    }
+    if (seen.has(arg)) {
+      throw usageError(`Duplicate option for ${commandName}: ${arg}.`);
+    }
+    seen.add(arg);
+    if (arg === '--json') {
+      json = true;
+      continue;
+    }
+    if (commandName !== 'simulate') {
+      throw usageError(`${arg} is only valid with the simulate command.`);
+    }
+    const value = args[++i];
+    if (!value || value.startsWith('-')) {
+      throw usageError(`${arg} requires a value.`);
+    }
+    if (arg === '--limit') rawLimit = value;
+    else rawModel = value;
   }
-  return defaultPath;
-}
 
-function flagValue(flag: string): string | undefined {
-  const idx = args.indexOf(flag);
-  if (idx < 0) return undefined;
-
-  const value = args[idx + 1];
-  if (!value || value.startsWith('-')) {
-    throw new Error(`${flag} requires a value.`);
+  if (positionals.length > 1) {
+    throw usageError(`${commandName} accepts at most one path; received ${positionals.length}.`);
   }
-  return value;
-}
-
-function parseSimulationLimit(): string | number | undefined {
-  const rawLimit = flagValue('--limit');
-  const rawModel = flagValue('--model');
+  if (commandName === 'simulate' && !rawLimit && !rawModel) {
+    throw usageError('simulate requires exactly one of --limit or --model.');
+  }
 
   if (rawLimit && rawModel) {
-    throw new Error('Use either --limit or --model, not both.');
+    throw usageError('Use exactly one of --limit or --model, not both.');
   }
 
   if (rawLimit) {
     const parsed = Number(rawLimit);
     if (!Number.isInteger(parsed) || parsed <= 0) {
-      throw new Error('--limit must be a positive integer.');
+      throw usageError('--limit must be a positive integer.');
     }
-    return parsed;
+    return { path: positionals[0] ?? '.', json, limitOrModel: parsed };
   }
 
   if (rawModel) {
     if (!CONTEXT_PRESETS[rawModel]) {
-      throw new Error(`Unknown model preset: ${rawModel}. Available presets: ${Object.keys(CONTEXT_PRESETS).join(', ')}`);
+      throw usageError(`Unknown model preset: ${rawModel}. Available presets: ${Object.keys(CONTEXT_PRESETS).join(', ')}`);
     }
-    return rawModel;
+    return { path: positionals[0] ?? '.', json, limitOrModel: rawModel };
   }
 
-  return undefined;
+  return { path: positionals[0] ?? '.', json };
 }
 
 function showHelp() {
@@ -228,13 +253,17 @@ ${VERSION}`);
 
 async function main() {
   if (command === 'count') {
-    await countCommand(pathArg(), args.includes('--json'));
+    const parsed = parseCommandArgs(command);
+    await countCommand(parsed.path, parsed.json);
   } else if (command === 'analyze') {
-    await analyzeCommand(pathArg(), args.includes('--json'));
+    const parsed = parseCommandArgs(command);
+    await analyzeCommand(parsed.path, parsed.json);
   } else if (command === 'simulate') {
-    await simulateCommand(pathArg(), parseSimulationLimit(), args.includes('--json'));
+    const parsed = parseCommandArgs(command);
+    await simulateCommand(parsed.path, parsed.limitOrModel, parsed.json);
   } else if (command === 'report') {
-    await reportCommand(pathArg(), args.includes('--json'));
+    const parsed = parseCommandArgs(command);
+    await reportCommand(parsed.path, parsed.json);
   } else if (command === '--version' || command === '-V' || command === '-v') {
     console.log(`contextmeter v${VERSION}`);
   } else if (command === '--help' || command === '-h' || command === 'help') {

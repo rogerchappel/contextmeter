@@ -29,22 +29,28 @@ When you paste a codebase into an LLM, every token counts. ContextMeter tells yo
 
 ## Installation
 
+ContextMeter is not currently published to npm. Install it from a checkout:
+
 ```sh
-npm install -g contextmeter
+git clone https://github.com/rogerchappel/contextmeter.git
+cd contextmeter
+npm install
+npm run build
+node dist/cli.js --help
 ```
 
 ## Quick Start
 
 ```sh
 # Count tokens in your project
-contextmeter count .
+node dist/cli.js count .
 
 # Find redundant content
-contextmeter analyze .
+node dist/cli.js analyze .
 
 # Will it fit in GPT-4's context window?
-contextmeter simulate . --model gpt-4
-contextmeter simulate . --limit 16384
+node dist/cli.js simulate . --model gpt-4
+node dist/cli.js simulate . --limit 16384
 ```
 
 For automation, add `--json` to `count`, `analyze`, `simulate`, or `report`.
