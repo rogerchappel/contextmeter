@@ -54,10 +54,7 @@ export function simulateOverflow(
   
   if (strategy === 'truncate' || strategy === 'combined') {
     for (const file of files) {
-      const ratio = limit > 0
-        ? Math.max(0, Math.min(remaining / limit, 1))
-        : 0;
-      const kept = Math.min(file.tokens, Math.max(0, Math.ceil(file.tokens * ratio)));
+      const kept = Math.min(file.tokens, Math.max(remaining, 0));
       const saved = file.tokens - kept;
       prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: saved });
       remaining -= kept;
