@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const CLI = 'node --import tsx src/cli.ts';
 const FIXTURES = 'fixtures';
@@ -20,6 +22,45 @@ function runCli(args: string): { status: number; stdout: string; stderr: string 
 }
 
 describe('CLI Integration', () => {
+  describe('direct file scanning', () => {
+    it('skips a direct binary file consistently in text and JSON output', () => {
+      const directory = mkdtempSync(join(tmpdir(), 'contextmeter-binary-'));
+      const binaryPath = join(directory, 'fixture.dat');
+      writeFileSync(binaryPath, Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x0d, 0x0a]));
+
+      try {
+        const textExpectations = [
+          ['count', 'Scanned: 0 files (1 binary, skipped)'],
+          ['analyze', 'Files analyzed: 0'],
+          ['simulate --limit 4000', 'Total tokens: 0'],
+          ['report', 'Files: 0 (1 binary skipped)'],
+        ] as const;
+        for (const [command, expected] of textExpectations) {
+          const output = execSync(`${CLI} ${command.split(' ')[0]} ${binaryPath} ${command.split(' ').slice(1).join(' ')}`, { encoding: 'utf8' });
+          assert.ok(output.includes(expected), command);
+        }
+
+        const count = JSON.parse(execSync(`${CLI} count ${binaryPath} --json`, { encoding: 'utf8' }));
+        assert.deepStrictEqual(count, { totalTokens: 0, files: [] });
+
+        const analysis = JSON.parse(execSync(`${CLI} analyze ${binaryPath} --json`, { encoding: 'utf8' }));
+        assert.equal(analysis.totalTokens, 0);
+        assert.deepStrictEqual(analysis.fileBreakdown, []);
+
+        const simulation = JSON.parse(execSync(`${CLI} simulate ${binaryPath} --limit 4000 --json`, { encoding: 'utf8' }));
+        assert.equal(simulation.totalTokens, 0);
+        assert.deepStrictEqual(simulation.prunedFiles, []);
+
+        const report = JSON.parse(execSync(`${CLI} report ${binaryPath} --json`, { encoding: 'utf8' }));
+        assert.equal(report.totalTokens, 0);
+        assert.deepStrictEqual(report.analysis.fileBreakdown, []);
+        assert.deepStrictEqual(report.simulation.prunedFiles, []);
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    });
+  });
+
   describe('package release contents', () => {
     it('keeps linked docs and fixtures in the npm allowlist', () => {
       const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
