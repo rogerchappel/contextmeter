@@ -37,30 +37,51 @@ describe('OverflowSimulator', () => {
   });
 
   describe('pruning strategies', () => {
-    it('truncate strategy reduces all files proportionally', () => {
+    it('truncate strategy allocates the remaining budget in file order', () => {
       const files = [{ path: 'a.ts', tokens: 300 }, { path: 'b.ts', tokens: 200 }];
       const result = simulateOverflow(files, 250, 'truncate');
-      assert.ok(result.prunedFiles.length >= 1);
+      assert.deepStrictEqual(result.prunedFiles, [
+        { path: 'a.ts', originalTokens: 300, savedTokens: 50 },
+        { path: 'b.ts', originalTokens: 200, savedTokens: 200 },
+      ]);
+      assert.strictEqual(result.saved, 250);
+      assert.strictEqual(result.afterPruning, 250);
+      assert.strictEqual(result.fits, true);
     });
     it('combined strategy applies multiple approaches', () => {
       const files = [{ path: 'a.ts', tokens: 300, content: 'const x = 42;' }];
       const result = simulateOverflow(files, 100, 'combined');
       assert.ok(result.prunedFiles.length >= 1);
     });
-    it('combined strategy bounds savings after an oversized leading file', () => {
+    it('combined strategy truncates an oversized leading file to the limit', () => {
       const result = simulateOverflow([
         { path: 'large.ts', tokens: 200 },
         { path: 'small.ts', tokens: 1 },
       ], 100, 'combined');
 
       assert.deepStrictEqual(result.prunedFiles, [
-        { path: 'large.ts', originalTokens: 200, savedTokens: 0 },
+        { path: 'large.ts', originalTokens: 200, savedTokens: 100 },
         { path: 'small.ts', originalTokens: 1, savedTokens: 1 },
       ]);
-      assert.strictEqual(result.saved, 1);
-      assert.strictEqual(result.afterPruning, 200);
-      assert.strictEqual(result.fits, false);
-      assert.ok(result.suggestions.some(suggestion => suggestion.includes('100 more tokens')));
+      assert.strictEqual(result.saved, 101);
+      assert.strictEqual(result.afterPruning, 100);
+      assert.strictEqual(result.fits, true);
+    });
+    it('accounts for zero-token, exact-fit, and overflow files once each', () => {
+      const result = simulateOverflow([
+        { path: 'empty.ts', tokens: 0 },
+        { path: 'exact.ts', tokens: 100 },
+        { path: 'overflow.ts', tokens: 25 },
+      ], 100, 'combined');
+
+      assert.deepStrictEqual(result.prunedFiles, [
+        { path: 'empty.ts', originalTokens: 0, savedTokens: 0 },
+        { path: 'exact.ts', originalTokens: 100, savedTokens: 0 },
+        { path: 'overflow.ts', originalTokens: 25, savedTokens: 25 },
+      ]);
+      assert.strictEqual(result.saved, 25);
+      assert.strictEqual(result.afterPruning, 100);
+      assert.strictEqual(result.fits, true);
     });
     it('combined strategy preserves aggregate invariants in either file order', () => {
       const files = [

@@ -160,6 +160,20 @@ describe('CLI Integration', () => {
       assert.equal(data.fits, true);
       assert.ok(Array.isArray(data.prunedFiles));
     });
+    it('truncates a single oversized file to the explicit limit', () => {
+      const path = 'fixtures/codebase/simple.ts';
+      const data = JSON.parse(execSync(`${CLI} simulate ${path} --limit 1 --json`, { encoding: 'utf8' }));
+
+      assert.ok(data.totalTokens > data.limit);
+      assert.equal(data.saved, data.totalTokens - data.limit);
+      assert.equal(data.afterPruning, data.limit);
+      assert.equal(data.fits, true);
+      assert.deepStrictEqual(data.prunedFiles, [{
+        path,
+        originalTokens: data.totalTokens,
+        savedTokens: data.totalTokens - data.limit,
+      }]);
+    });
     it('fails on unknown preset', () => {
       const result = runCli(`simulate ${FIXTURES} --model nonexistent_model_xyz`);
       assert.notStrictEqual(result.status, 0);
