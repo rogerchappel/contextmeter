@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { scanDirectory, loadGitignore, DEFAULT_EXCLUDES } from './utils/file-scanner.js';
+import { scanDirectory, loadGitignore, DEFAULT_EXCLUDES, isBinary } from './utils/file-scanner.js';
 import { approximateTokens, countTokensForLanguage } from './core/token-counter.js';
 import { analyzeContent } from './core/content-analyzer.js';
 import { simulateOverflow, CONTEXT_PRESETS } from './core/overflow-simulator.js';
@@ -16,14 +16,15 @@ function formatError(error: unknown): string {
 function scanPath(path: string): FileEntry[] {
   const stat = fs.statSync(path);
   if (stat.isFile()) {
-    const content = fs.readFileSync(path, 'utf-8');
+    const binary = isBinary(path);
+    const content = binary ? undefined : fs.readFileSync(path, 'utf-8');
     return [{
       path,
       relativePath: path,
       language: getLanguage(path),
       content,
-      isBinary: false,
-      size: content.length,
+      isBinary: binary,
+      size: stat.size,
     }];
   }
   return scanDirectory(path, [...DEFAULT_EXCLUDES, ...loadGitignore(path)]);

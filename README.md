@@ -64,6 +64,8 @@ For automation, add `--json` to `count`, `analyze`, `simulate`, or `report`.
 | `simulate <path>` | Simulate context window overflow for a file or directory |
 | `report <path>` | Combined report for a file or directory: token count + analysis + simulation |
 
+Binary files are skipped whether they are passed directly or discovered while scanning a directory.
+
 ## Flags
 
 - `--json` — Output results as JSON for piping/automation
