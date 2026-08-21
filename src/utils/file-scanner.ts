@@ -132,7 +132,15 @@ function globToRegex(pattern: string): string {
     if (character === '*') {
       if (pattern[index + 1] === '*') {
         while (pattern[index + 1] === '*') index++;
-        result += '.*';
+        // In Git patterns, a double star followed by a slash matches zero or
+        // more directories. Keep the slash inside the optional group so that
+        // `foo/**/bar` also matches `foo/bar`.
+        if (pattern[index + 1] === '/') {
+          index++;
+          result += '(?:.*/)?';
+        } else {
+          result += '.*';
+        }
       } else {
         result += '[^/]*';
       }
