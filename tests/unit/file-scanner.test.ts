@@ -137,5 +137,20 @@ describe('FileScanner', () => {
         ]);
       });
     });
+
+    it('matches double-star directory globs at zero or multiple levels', () => {
+      withProject({
+        '.gitignore': 'foo/**/bar.txt\n',
+        'foo/bar.txt': 'ignored at zero levels\n',
+        'foo/x/y/bar.txt': 'ignored at multiple levels\n',
+        'foo/x/kept.txt': 'kept\n',
+      }, projectPath => {
+        const files = scanDirectory(projectPath, loadGitignore(projectPath));
+        assert.deepStrictEqual(files.map(file => file.relativePath).sort(), [
+          '.gitignore',
+          'foo/x/kept.txt',
+        ]);
+      });
+    });
   });
 });

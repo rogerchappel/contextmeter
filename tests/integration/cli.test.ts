@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -55,6 +55,31 @@ describe('CLI Integration', () => {
         assert.equal(report.totalTokens, 0);
         assert.deepStrictEqual(report.analysis.fileBreakdown, []);
         assert.deepStrictEqual(report.simulation.prunedFiles, []);
+      } finally {
+        rmSync(directory, { recursive: true, force: true });
+      }
+    });
+
+    it('honors zero- and multi-directory double-star gitignore matches', () => {
+      const directory = mkdtempSync(join(tmpdir(), 'contextmeter-double-star-'));
+      writeFileSync(join(directory, '.gitignore'), 'foo/**/bar.txt\n');
+      const nestedDirectory = join(directory, 'foo', 'x');
+      mkdirSync(nestedDirectory, { recursive: true });
+      writeFileSync(join(directory, 'foo', 'bar.txt'), 'ignored\n');
+      writeFileSync(join(nestedDirectory, 'bar.txt'), 'ignored\n');
+      writeFileSync(join(nestedDirectory, 'kept.txt'), 'visible content\n');
+
+      try {
+        for (const command of ['count', 'analyze', 'simulate', 'report']) {
+          const extraArgs = command === 'simulate' ? ' --limit 4000' : '';
+          const data = JSON.parse(execSync(
+            `${CLI} ${command} ${directory}${extraArgs} --json`,
+            { encoding: 'utf8' },
+          ));
+          const serialized = JSON.stringify(data);
+          assert.doesNotMatch(serialized, /bar\.txt/, command);
+          if (command !== 'simulate') assert.match(serialized, /kept\.txt/, command);
+        }
       } finally {
         rmSync(directory, { recursive: true, force: true });
       }
