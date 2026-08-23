@@ -98,7 +98,7 @@ async function analyzeCommand(path: string, json = false) {
   }
 }
 
-async function simulateCommand(path: string, limitOrModel: string | number | undefined, json = false) {
+async function simulateCommand(path: string, limitOrModel: string | number, json = false) {
   const files = scanPath(path);
   const textFiles = files.filter(f => !f.isBinary && f.content !== undefined);
   const fileData = textFiles.map(f => ({
@@ -114,7 +114,7 @@ async function simulateCommand(path: string, limitOrModel: string | number | und
   } else if (typeof limitOrModel === 'number') {
     limit = limitOrModel;
   } else {
-    limit = 8192;
+    throw new Error(`Unknown model preset: ${limitOrModel}.`);
   }
   const result = simulateOverflow(fileData, limit, 'combined');
   if (json) {
@@ -241,13 +241,13 @@ function showHelp() {
 Commands:
   count <path>              Count tokens in a file or directory
   analyze <path>            Analyze a file or directory for redundancy
-  simulate <path> [--limit N|--model name]  Simulate file or directory context overflow
+  simulate <path> (--limit N|--model name)  Simulate file or directory context overflow
   report <path>             Report on a file or directory
 
 Flags:
   --json            Output results as JSON
-  --limit <tokens>  Set token limit for simulation
-  --model <name>    Use preset model context window (gpt-4, claude-3-sonnet, etc.)
+  --limit <tokens>  Set token limit for simulation (required unless --model is used)
+  --model <name>    Use preset model context window (required unless --limit is used)
 
 ${VERSION}`);
 }
@@ -261,7 +261,7 @@ async function main() {
     await analyzeCommand(parsed.path, parsed.json);
   } else if (command === 'simulate') {
     const parsed = parseCommandArgs(command);
-    await simulateCommand(parsed.path, parsed.limitOrModel, parsed.json);
+    await simulateCommand(parsed.path, parsed.limitOrModel!, parsed.json);
   } else if (command === 'report') {
     const parsed = parseCommandArgs(command);
     await reportCommand(parsed.path, parsed.json);

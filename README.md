@@ -61,7 +61,7 @@ For automation, add `--json` to `count`, `analyze`, `simulate`, or `report`.
 |---------|-------------|
 | `count <path>` | Count tokens across a file or directory |
 | `analyze <path>` | Analyze a file or directory for redundancy, boilerplate, and stale references |
-| `simulate <path>` | Simulate context window overflow for a file or directory |
+| `simulate <path> --limit <n>` or `simulate <path> --model <name>` | Simulate context window overflow for a file or directory; exactly one limit selector is required |
 | `report <path>` | Combined report for a file or directory: token count + analysis + simulation |
 
 Binary files are skipped whether they are passed directly or discovered while scanning a directory.
@@ -69,8 +69,8 @@ Binary files are skipped whether they are passed directly or discovered while sc
 ## Flags
 
 - `--json` — Output results as JSON for piping/automation
-- `--limit <n>` — Set custom token limit for simulation
-- `--model <name>` — Use preset: `gpt-4`, `gpt-4o`, `claude-3-sonnet`, `gemini-1.5-pro`, etc.
+- `--limit <n>` — Set a custom simulation token limit; use exactly one of `--limit` or `--model`
+- `--model <name>` — Use a simulation preset such as `gpt-4`, `gpt-4o`, `claude-3-sonnet`, or `gemini-1.5-pro`; use exactly one of `--model` or `--limit`
 
 ## Example Output
 
