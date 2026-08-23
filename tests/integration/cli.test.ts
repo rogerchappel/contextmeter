@@ -251,6 +251,12 @@ describe('CLI Integration', () => {
   });
 
   describe('error handling', () => {
+    it('documents the required simulation selector in help output', () => {
+      const output = execSync(`${CLI} --help`, { encoding: 'utf8' });
+      assert.match(output, /simulate <path> \(--limit N\|--model name\)/);
+      assert.match(output, /required unless --model is used/);
+      assert.match(output, /required unless --limit is used/);
+    });
     it('handles unknown command', () => {
       const result = runCli('bogus_command_xyz');
       assert.notStrictEqual(result.status, 0);
@@ -278,15 +284,15 @@ describe('CLI Integration', () => {
         assert.match(result.stderr, /usage information/i);
       }
     });
-    it('requires exactly one simulation limit selector', () => {
-      for (const invocation of [
-        `simulate ${FIXTURES}`,
-        `simulate ${FIXTURES} --limit 4000 --model gpt-4`,
-      ]) {
-        const result = runCli(invocation);
-        assert.notStrictEqual(result.status, 0, invocation);
-        assert.match(result.stderr, /exactly one|not both/i);
-      }
+    it('rejects a bare simulation command without a limit selector', () => {
+      const result = runCli(`simulate ${FIXTURES}`);
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stderr, /requires exactly one of --limit or --model/i);
+    });
+    it('rejects mutually exclusive simulation limit selectors', () => {
+      const result = runCli(`simulate ${FIXTURES} --limit 4000 --model gpt-4`);
+      assert.notStrictEqual(result.status, 0);
+      assert.match(result.stderr, /exactly one|not both/i);
     });
   });
 });
