@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync, unlinkSync } from 'node:
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
-  getLanguage, isBinary, scanDirectory, loadGitignore, DEFAULT_EXCLUDES,
+  getLanguage, isBinary, scanDirectory, loadGitignore, normalizeRepositoryPath, DEFAULT_EXCLUDES,
 } from '../../src/utils/file-scanner.js';
 
 describe('FileScanner', () => {
@@ -150,6 +150,30 @@ describe('FileScanner', () => {
           '.gitignore',
           'foo/x/kept.txt',
         ]);
+      });
+    });
+
+    it('normalizes Windows-style relative paths for repository output and ignore matching', () => {
+      assert.strictEqual(normalizeRepositoryPath('src\\nested\\main.ts'), 'src/nested/main.ts');
+      assert.strictEqual(normalizeRepositoryPath('generated\\keep.ts'), 'generated/keep.ts');
+    });
+
+    it('returns only stable repository-relative paths for nested directory scans', () => {
+      withProject({
+        '.gitignore': 'generated/**\n!generated/keep.ts\n',
+        'generated/drop.ts': 'ignored\n',
+        'generated/keep.ts': 'kept\n',
+        'src/nested/main.ts': 'kept\n',
+      }, projectPath => {
+        const files = scanDirectory(projectPath, loadGitignore(projectPath));
+        const relativePaths = files.map(file => file.relativePath).sort();
+        assert.deepStrictEqual(relativePaths, [
+          '.gitignore',
+          'generated/keep.ts',
+          'src/nested/main.ts',
+        ]);
+        assert.ok(relativePaths.every(filePath => !filePath.includes('\\')));
+        assert.ok(relativePaths.every(filePath => !filePath.startsWith(projectPath)));
       });
     });
   });
