@@ -1,5 +1,5 @@
 import { readFileSync, statSync, readdirSync } from 'node:fs';
-import { join, extname, basename, resolve } from 'node:path';
+import { join, extname, basename, relative, resolve } from 'node:path';
 
 export const EXTENSION_MAP: Record<string, string> = {
   '.ts': 'typescript', '.tsx': 'typescript',
@@ -59,6 +59,11 @@ export interface FileEntry {
   size: number; content?: string; isBinary: boolean;
 }
 
+/** Normalize a path produced by the host platform for repository-facing output. */
+export function normalizeRepositoryPath(filePath: string): string {
+  return filePath.replace(/\\/g, '/');
+}
+
 export function scanDirectory(dirPath: string, excludes: string[] = []): FileEntry[] {
   const results: FileEntry[] = [];
   const resolvedDir = resolve(dirPath);
@@ -68,7 +73,7 @@ export function scanDirectory(dirPath: string, excludes: string[] = []): FileEnt
     const entries = readdirSync(currentPath, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = join(currentPath, entry.name);
-      const relativePath = fullPath.replace(resolvedDir + '/', '');
+      const relativePath = normalizeRepositoryPath(relative(resolvedDir, fullPath));
       const excluded = shouldExclude(relativePath, entry.isDirectory(), ignoreRules);
       if (entry.isDirectory()) {
         // A later negation may restore a descendant of an ignored directory.
