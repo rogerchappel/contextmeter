@@ -1,7 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
-const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+const npmCli = process.env.npm_execpath;
+if (!npmCli) {
+  throw new Error('Package smoke must be run through npm so npm_execpath is available.');
+}
+
+const output = execFileSync(process.execPath, [npmCli, 'pack', '--dry-run', '--json'], {
   encoding: 'utf8',
 });
 
