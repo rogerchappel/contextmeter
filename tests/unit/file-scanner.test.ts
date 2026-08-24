@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, unlinkSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -46,14 +46,16 @@ describe('FileScanner', () => {
       assert.strictEqual(isBinary('/path/to/app.exe'), true);
     });
     it('detects text file as non-binary', () => {
-      const tmp = '/tmp/cm-test-isbinary.txt';
-      writeFileSync(tmp, 'hello world');
-      try { assert.strictEqual(isBinary(tmp), false); } finally { unlinkSync(tmp); }
+      const directory = mkdtempSync(join(tmpdir(), 'contextmeter-isbinary-'));
+      const file = join(directory, 'fixture.txt');
+      writeFileSync(file, 'hello world');
+      try { assert.strictEqual(isBinary(file), false); } finally { rmSync(directory, { recursive: true }); }
     });
     it('detects ts file as non-binary', () => {
-      const tmp = '/tmp/cm-test-isbinary.ts';
-      writeFileSync(tmp, 'const x = 42;');
-      try { assert.strictEqual(isBinary(tmp), false); } finally { unlinkSync(tmp); }
+      const directory = mkdtempSync(join(tmpdir(), 'contextmeter-isbinary-'));
+      const file = join(directory, 'fixture.ts');
+      writeFileSync(file, 'const x = 42;');
+      try { assert.strictEqual(isBinary(file), false); } finally { rmSync(directory, { recursive: true }); }
     });
   });
 
