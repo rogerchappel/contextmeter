@@ -2,26 +2,31 @@
 
 ## Supported Versions
 
-Replace this section with the supported versions for `contextmeter`.
+`contextmeter` has not published a GitHub release or an npm package yet. The
+`0.1.0` version in `package.json` and `CHANGELOG.md` describes the current
+repository checkout; it is not a published release.
 
-Example:
+Security fixes are currently made against the latest commit on the `main`
+branch. Older commits and copied checkouts are not maintained as separate
+supported versions. This policy will be updated when the project begins
+publishing versioned releases.
 
-```md
-| Version | Supported |
+| Source state | Supported |
 | --- | --- |
-| .x | Yes |
-| < .0 | No |
-```
-
-If the project does not publish versioned releases yet, say that clearly.
+| Latest `main` branch checkout (`0.1.0`) | Yes |
+| Older commits or copied checkouts | No |
+| npm package or GitHub release | Not published |
 
 ## Reporting a Vulnerability
 
 Please do not report suspected vulnerabilities in public issues, pull requests, or discussions.
 
-Ask maintainers for the private security reporting path before sharing details.
+Use GitHub's private vulnerability reporting option on this repository when it
+is available. Otherwise, ask the maintainers through a public project channel
+to provide a private reporting path before sharing details.
 
-If no private reporting path exists yet, ask maintainers through public project channels for a private reporting path. Do not include exploit details, secrets, personal data, or sensitive technical details in public messages.
+Do not include exploit details, secrets, personal data, or sensitive technical
+details in a public request.
 
 ## What to Include
 
