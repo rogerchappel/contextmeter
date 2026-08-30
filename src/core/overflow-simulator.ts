@@ -77,26 +77,41 @@ export function simulateOverflow(
   if (strategy === 'remove-boilerplate') {
     prunedFiles.length = 0;
     for (const file of files) {
-      const content = file.content || '';
-      const boilerplateTokens = Math.ceil(content.split('\n').slice(0, 5).join('\n').length / 3.6);
+      const boilerplate = removableBoilerplate(file.content || '');
+      const boilerplateTokens = Math.min(file.tokens, Math.ceil(boilerplate.length / 3.6));
       prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: boilerplateTokens });
     }
   }
   
   if (strategy === 'deduplicate') {
     prunedFiles.length = 0;
+    const seen = new Set<string>();
     for (const file of files) {
-      prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: 0 });
+      const content = file.content || '';
+      const duplicate = content.length > 0 && seen.has(content);
+      if (content.length > 0) seen.add(content);
+      prunedFiles.push({ path: file.path, originalTokens: file.tokens, savedTokens: duplicate ? file.tokens : 0 });
     }
   }
   
-  const saved = prunedFiles.reduce((sum, f) => sum + f.savedTokens, 0);
-  const afterPruning = totalTokens - saved;
+  const saved = Math.min(totalTokens, prunedFiles.reduce((sum, f) => sum + f.savedTokens, 0));
+  const afterPruning = Math.max(0, totalTokens - saved);
   const fits = afterPruning <= limit;
   
   const suggestions = generateOptimizationSuggestions(files, totalTokens, limit, strategy, saved);
   
   return { totalTokens, limit, overflows, fits, strategy, saved, afterPruning, prunedFiles, suggestions };
+}
+
+function removableBoilerplate(content: string): string {
+  const lines = content.split('\n').slice(0, 10);
+  const marker = /(?:copyright|license|spdx-license-identifier|generated file|auto-?generated|do not edit)/i;
+  const lastMarkedLine = lines.reduce((last, line, index) => marker.test(line) ? index : last, -1);
+  if (lastMarkedLine < 0) return '';
+
+  const prefix = lines.slice(0, lastMarkedLine + 1);
+  const commentOnly = prefix.every(line => /^\s*(?:\/\/|\/\*|\*|#|<!--|$)/.test(line));
+  return commentOnly ? prefix.join('\n') : '';
 }
 
 export function generateOptimizationSuggestions(
@@ -122,7 +137,9 @@ export function generateOptimizationSuggestions(
     const removable = files.filter(f => f.tokens <= 50);
     suggestions.push(`Removing ${removable.length} small files (<50 tokens) would save tokens.`);
   } else if (strategy === 'remove-boilerplate') {
-    suggestions.push(`Removing boilerplate from first 5 lines of each file could help.`);
+    suggestions.push(`Removing recognized leading license or generated-file comments could save ${saved} tokens.`);
+  } else if (strategy === 'deduplicate') {
+    suggestions.push(`Removing exact duplicate file content could save ${saved} tokens.`);
   }
   
   if (saved > 0 && saved < excess) {

@@ -104,10 +104,24 @@ describe('OverflowSimulator', () => {
         assert.strictEqual(result.fits, result.afterPruning <= result.limit);
       }
     });
-    it('remove boilerplate saves estimated tokens', () => {
+    it('remove boilerplate saves only recognized leading comments', () => {
       const files = [{ path: 'a.ts', tokens: 300, content: '// MIT License\n' + 'x'.repeat(100) }];
       const result = simulateOverflow(files, 100, 'remove-boilerplate');
       assert.ok(result.prunedFiles.some(f => f.savedTokens > 0));
+    });
+    it('does not treat ordinary file prefixes as removable boilerplate', () => {
+      const result = simulateOverflow([{ path: 'a.ts', tokens: 1, content: 'hello' }], 0, 'remove-boilerplate');
+      assert.strictEqual(result.saved, 0);
+      assert.strictEqual(result.afterPruning, 1);
+    });
+    it('caps boilerplate savings at the file token count', () => {
+      const result = simulateOverflow([{
+        path: 'tiny.ts',
+        tokens: 1,
+        content: '// Copyright 2026 Example Corporation. Licensed under the MIT License.',
+      }], 0, 'remove-boilerplate');
+      assert.strictEqual(result.prunedFiles[0].savedTokens, 1);
+      assert.strictEqual(result.afterPruning, 0);
     });
     it('remove low value removes files', () => {
       const files = [{ path: 'a.ts', tokens: 300 }, { path: 'b.ts', tokens: 200 }];
@@ -125,10 +139,30 @@ describe('OverflowSimulator', () => {
         { path: 'large.ts', originalTokens: 80, savedTokens: 0 },
       ]);
     });
-    it('deduplicate strategy handles duplicate groups', () => {
-      const files = [{ path: 'a.ts', tokens: 300 }];
-      const result = simulateOverflow(files, 100, 'deduplicate');
-      assert.ok(result.prunedFiles.length >= 1);
+    it('deduplicate strategy saves exact duplicate content once', () => {
+      const files = [
+        { path: 'a.ts', tokens: 10, content: 'same content' },
+        { path: 'b.ts', tokens: 10, content: 'same content' },
+        { path: 'c.ts', tokens: 10, content: 'different content' },
+      ];
+      const result = simulateOverflow(files, 20, 'deduplicate');
+      assert.deepStrictEqual(result.prunedFiles.map(file => file.savedTokens), [0, 10, 0]);
+      assert.strictEqual(result.saved, 10);
+      assert.strictEqual(result.afterPruning, 20);
+    });
+    it('preserves aggregate bounds for every pruning strategy', () => {
+      const files = [
+        { path: 'a.ts', tokens: 1, content: '// MIT License with a deliberately long notice' },
+        { path: 'b.ts', tokens: 1, content: '// MIT License with a deliberately long notice' },
+      ];
+      for (const strategy of ['combined', 'truncate', 'remove-boilerplate', 'remove-low-value', 'deduplicate'] as PruningStrategy[]) {
+        const result = simulateOverflow(files, 0, strategy);
+        for (const file of result.prunedFiles) {
+          assert.ok(file.savedTokens >= 0 && file.savedTokens <= file.originalTokens);
+        }
+        assert.ok(result.afterPruning >= 0 && result.afterPruning <= result.totalTokens);
+        assert.strictEqual(result.saved + result.afterPruning, result.totalTokens);
+      }
     });
   });
 
