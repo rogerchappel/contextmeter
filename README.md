@@ -96,8 +96,8 @@ When context overflows, ContextMeter simulates different approaches:
 - **combined** — Keep files in input order up to the remaining context budget, truncating the boundary file and later files (default)
 - **truncate** — Keep files in input order up to the remaining context budget
 - **remove-low-value** — Remove smallest files first
-- **remove-boilerplate** — Strip license headers and generated comments
-- **deduplicate** — Account for shared content across files
+- **remove-boilerplate** — Estimate savings from recognized leading license and generated-file comments
+- **deduplicate** — Remove subsequent files with exactly identical non-empty content
 
 ## Limitations and Safety
 
