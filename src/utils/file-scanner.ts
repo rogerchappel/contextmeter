@@ -67,17 +67,21 @@ export function normalizeRepositoryPath(filePath: string): string {
 export function scanDirectory(dirPath: string, excludes: string[] = []): FileEntry[] {
   const results: FileEntry[] = [];
   const resolvedDir = resolve(dirPath);
-  const ignoreRules = excludes.map(compileIgnoreRule).filter(rule => rule !== null);
-  const hasNegations = ignoreRules.some(rule => rule.negated);
-  function scan(currentPath: string) {
+  function scan(currentPath: string, parentRules: IgnoreRule[]) {
+    const base = normalizeRepositoryPath(relative(resolvedDir, currentPath));
+    const ignoreRules = [
+      ...parentRules,
+      ...loadGitignore(currentPath).map(pattern => compileIgnoreRule(pattern, base)).filter(rule => rule !== null),
+    ];
     const entries = readdirSync(currentPath, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = join(currentPath, entry.name);
       const relativePath = normalizeRepositoryPath(relative(resolvedDir, fullPath));
       const excluded = shouldExclude(relativePath, entry.isDirectory(), ignoreRules);
       if (entry.isDirectory()) {
-        // A later negation may restore a descendant of an ignored directory.
-        if (!excluded || hasNegations) scan(fullPath);
+        // A known later negation may restore a descendant of an ignored
+        // directory, so do not prune while one is in scope.
+        if (!excluded || ignoreRules.some(rule => rule.negated)) scan(fullPath, ignoreRules);
       }
       else if (entry.isFile()) {
         if (excluded) continue;
@@ -92,11 +96,12 @@ export function scanDirectory(dirPath: string, excludes: string[] = []): FileEnt
       }
     }
   }
-  scan(resolvedDir);
+  scan(resolvedDir, excludes.map(pattern => compileIgnoreRule(pattern, '')).filter(rule => rule !== null));
   return results;
 }
 
 interface IgnoreRule {
+  base: string;
   negated: boolean;
   regex: RegExp;
 }
@@ -105,12 +110,17 @@ function shouldExclude(relativePath: string, isDirectory: boolean, rules: Ignore
   let excluded = false;
   const candidate = isDirectory ? `${relativePath}/` : relativePath;
   for (const rule of rules) {
-    if (rule.regex.test(candidate)) excluded = !rule.negated;
+    const localCandidate = rule.base === ''
+      ? candidate
+      : candidate.startsWith(`${rule.base}/`)
+        ? candidate.slice(rule.base.length + 1)
+        : null;
+    if (localCandidate !== null && rule.regex.test(localCandidate)) excluded = !rule.negated;
   }
   return excluded;
 }
 
-function compileIgnoreRule(rawPattern: string): IgnoreRule | null {
+function compileIgnoreRule(rawPattern: string, base: string): IgnoreRule | null {
   let pattern = rawPattern;
   let negated = false;
   if (pattern.startsWith('\\!')) pattern = pattern.slice(1);
@@ -127,7 +137,7 @@ function compileIgnoreRule(rawPattern: string): IgnoreRule | null {
   const hasSlash = pattern.includes('/');
   const prefix = anchored || hasSlash ? '^' : '(?:^|/)';
   const suffix = directoryOnly ? '/(?:.*)?$' : '(?:/.*)?$';
-  return { negated, regex: new RegExp(prefix + globToRegex(pattern) + suffix) };
+  return { base, negated, regex: new RegExp(prefix + globToRegex(pattern) + suffix) };
 }
 
 function globToRegex(pattern: string): string {
