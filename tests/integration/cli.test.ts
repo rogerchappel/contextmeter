@@ -124,6 +124,20 @@ describe('CLI Integration', () => {
       assert.notStrictEqual(result.status, 0);
       assert.match(result.stderr, /no such file or directory|ENOENT/);
     });
+    it('honors nested .gitignore scope in JSON output', () => {
+      const root = mkdtempSync(join(tmpdir(), 'contextmeter-cli-ignore-'));
+      try {
+        mkdirSync(join(root, 'packages/app/generated'), { recursive: true });
+        writeFileSync(join(root, 'packages/app/.gitignore'), 'generated/\n');
+        writeFileSync(join(root, 'packages/app/generated/nested.txt'), 'ignored content');
+        writeFileSync(join(root, 'packages/app/keep.txt'), 'included content');
+
+        const output = execSync(`${CLI} count ${JSON.stringify(root)} --json`, { encoding: 'utf8' });
+        const paths = JSON.parse(output).files.map((file: { path: string }) => file.path);
+        assert.ok(!paths.includes('packages/app/generated/nested.txt'));
+        assert.ok(paths.includes('packages/app/keep.txt'));
+      } finally { rmSync(root, { recursive: true, force: true }); }
+    });
   });
 
   describe('analyze command', () => {
