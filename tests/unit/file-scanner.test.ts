@@ -178,5 +178,34 @@ describe('FileScanner', () => {
         assert.ok(relativePaths.every(filePath => !filePath.startsWith(projectPath)));
       });
     });
+
+    it('applies nested ignore rules only below their containing directory', () => {
+      withProject({
+        'packages/app/.gitignore': 'generated/\n',
+        'packages/app/generated/nested.txt': 'ignored\n',
+        'packages/app/keep.txt': 'kept\n',
+        'generated/nested.txt': 'outside child scope\n',
+      }, projectPath => {
+        const paths = scanDirectory(projectPath, DEFAULT_EXCLUDES)
+          .map(file => file.relativePath).sort();
+        assert.ok(!paths.includes('packages/app/generated/nested.txt'));
+        assert.ok(paths.includes('packages/app/keep.txt'));
+        assert.ok(paths.includes('generated/nested.txt'));
+      });
+    });
+
+    it('lets child negations override matching parent rules', () => {
+      withProject({
+        '.gitignore': '*.txt\n',
+        'packages/app/.gitignore': '!keep.txt\n',
+        'packages/app/keep.txt': 'kept\n',
+        'packages/app/other.txt': 'ignored\n',
+      }, projectPath => {
+        const paths = scanDirectory(projectPath, DEFAULT_EXCLUDES)
+          .map(file => file.relativePath).sort();
+        assert.ok(paths.includes('packages/app/keep.txt'));
+        assert.ok(!paths.includes('packages/app/other.txt'));
+      });
+    });
   });
 });

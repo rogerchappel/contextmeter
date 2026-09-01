@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { scanDirectory, loadGitignore, DEFAULT_EXCLUDES, isBinary } from './utils/file-scanner.js';
+import { scanDirectory, DEFAULT_EXCLUDES, isBinary } from './utils/file-scanner.js';
 import { approximateTokens, countTokensForLanguage } from './core/token-counter.js';
 import { analyzeContent } from './core/content-analyzer.js';
 import { simulateOverflow, CONTEXT_PRESETS } from './core/overflow-simulator.js';
@@ -27,7 +27,7 @@ function scanPath(path: string): FileEntry[] {
       size: stat.size,
     }];
   }
-  return scanDirectory(path, [...DEFAULT_EXCLUDES, ...loadGitignore(path)]);
+  return scanDirectory(path, DEFAULT_EXCLUDES);
 }
 
 async function countCommand(path: string, json = false) {

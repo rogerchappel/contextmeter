@@ -65,6 +65,9 @@ For automation, add `--json` to `count`, `analyze`, `simulate`, or `report`.
 | `report <path>` | Combined report for a file or directory: token count + analysis + simulation |
 
 Binary files are skipped whether they are passed directly or discovered while scanning a directory.
+Directory scans apply every `.gitignore` encountered while traversing the tree.
+Rules are scoped to the directory containing that file, and later nested rules
+(including negations) take precedence over matching parent rules.
 
 ## Flags
 
