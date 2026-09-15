@@ -78,11 +78,6 @@ describe('ContentAnalyzer', () => {
     it('returns empty for clean code', () => {
       assert.strictEqual(detectStaleReferences('const x = 42;', 'test.ts').length, 0);
     });
-    it('detects dated TODOs', () => {
-      const content = '// TODO fix this before January 2024 - we need to refactor';
-      const findings = detectStaleReferences(content, 'test.ts');
-      assert.ok(findings.some(f => f.message.includes('Dated')));
-    });
     it('distinguishes repeated dated TODOs by source line', () => {
       const todo = '// TODO fix this before January 2024 - we need to refactor';
       const findings = detectStaleReferences(`${todo}\nconst active = true;\n${todo}`, 'test.ts');

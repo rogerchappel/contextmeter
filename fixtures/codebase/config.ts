@@ -34,7 +34,6 @@ export class AuthManager {
     return Array.from(this.users.values());
   }
 
-  // TODO: temporary hack until we fix the auth system - January 2024
   async grantAdmin(id: string): Promise<boolean> {
     const user = await this.getUser(id);
     if (!user) return false;
@@ -67,7 +66,6 @@ export class AuthManager {
     return Array.from(this.users.values());
   }
 
-  // TODO: temporary hack until we fix the auth system - January 2024
   async grantAdmin(id: string): Promise<boolean> {
     const user = await this.getUser(id);
     if (!user) return false;

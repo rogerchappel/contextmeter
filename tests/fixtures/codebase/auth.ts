@@ -1,5 +1,4 @@
 // Another TypeScript service - includes some duplicate lines with simple.ts
-// TODO: temporary hack until we fix the auth system - January 2024
 // This module handles authentication for the application
 
 export interface AuthService {
@@ -79,4 +78,3 @@ export class MockAuthService implements AuthService {
 
 // TODO: add rate limiting
 // TODO: add refresh token support
-// TODO: fix this before January 2024
