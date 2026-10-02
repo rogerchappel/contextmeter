@@ -24,7 +24,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "test": "node --import tsx --test tests/**/*.test.ts",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\"",
     "lint": "tsc --noEmit",
     "check": "tsc --noEmit",
     "smoke": "node --import tsx src/cli.ts count tests/fixtures && node --import tsx src/cli.ts analyze tests/fixtures && node --import tsx src/cli.ts simulate tests/fixtures --limit 4000",
