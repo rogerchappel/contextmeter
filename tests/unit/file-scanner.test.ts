@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -72,6 +72,43 @@ describe('FileScanner', () => {
     it('excludes minified files', () => {
       assert.ok(DEFAULT_EXCLUDES.includes('*.min.js'));
       assert.ok(DEFAULT_EXCLUDES.includes('*.min.css'));
+    });
+  });
+
+  describe('symbolic links', () => {
+    it('scans linked source files and directories without looping or duplicating targets', () => {
+      const projectPath = mkdtempSync(join(tmpdir(), 'contextmeter-symlink-'));
+      const externalPath = mkdtempSync(join(tmpdir(), 'contextmeter-symlink-target-'));
+      try {
+        const sourcePath = join(projectPath, 'source.ts');
+        const linkedFilePath = join(projectPath, 'linked.ts');
+        const linkedDirectoryPath = join(projectPath, 'linked-dir');
+        const nestedSourcePath = join(externalPath, 'nested.ts');
+        writeFileSync(sourcePath, 'export const source = true;\\n');
+        writeFileSync(nestedSourcePath, 'export const nested = true;\\n');
+        symlinkSync(sourcePath, linkedFilePath);
+        symlinkSync(externalPath, linkedDirectoryPath, 'dir');
+        symlinkSync(projectPath, join(externalPath, 'cycle'), 'dir');
+
+        const files = scanDirectory(projectPath);
+        const paths = files.map(file => file.relativePath).sort();
+        assert.deepStrictEqual(paths, ['linked-dir/nested.ts', 'linked.ts', 'source.ts']);
+        assert.strictEqual(files.find(file => file.relativePath === 'linked.ts')?.content,
+          'export const source = true;\\n');
+      } finally {
+        rmSync(projectPath, { recursive: true, force: true });
+        rmSync(externalPath, { recursive: true, force: true });
+      }
+    });
+
+    it('excludes dangling symbolic links rather than emitting incomplete entries', () => {
+      const projectPath = mkdtempSync(join(tmpdir(), 'contextmeter-dangling-link-'));
+      try {
+        symlinkSync(join(projectPath, 'missing.ts'), join(projectPath, 'dangling.ts'));
+        assert.deepStrictEqual(scanDirectory(projectPath), []);
+      } finally {
+        rmSync(projectPath, { recursive: true, force: true });
+      }
     });
   });
 

@@ -1,4 +1,4 @@
-import { readFileSync, statSync, readdirSync } from 'node:fs';
+import { readFileSync, statSync, readdirSync, realpathSync } from 'node:fs';
 import { join, extname, basename, relative, resolve } from 'node:path';
 
 export const EXTENSION_MAP: Record<string, string> = {
@@ -67,7 +67,14 @@ export function normalizeRepositoryPath(filePath: string): string {
 export function scanDirectory(dirPath: string, excludes: string[] = []): FileEntry[] {
   const results: FileEntry[] = [];
   const resolvedDir = resolve(dirPath);
+  const visitedDirectories = new Set<string>();
   function scan(currentPath: string, parentRules: IgnoreRule[]) {
+    // Follow directory symlinks, but visit each real directory only once to
+    // avoid cycles and duplicate results through aliases.
+    let realDirectory: string;
+    try { realDirectory = realpathSync(currentPath); } catch { return; }
+    if (visitedDirectories.has(realDirectory)) return;
+    visitedDirectories.add(realDirectory);
     const base = normalizeRepositoryPath(relative(resolvedDir, currentPath));
     const ignoreRules = [
       ...parentRules,
@@ -77,13 +84,22 @@ export function scanDirectory(dirPath: string, excludes: string[] = []): FileEnt
     for (const entry of entries) {
       const fullPath = join(currentPath, entry.name);
       const relativePath = normalizeRepositoryPath(relative(resolvedDir, fullPath));
-      const excluded = shouldExclude(relativePath, entry.isDirectory(), ignoreRules);
-      if (entry.isDirectory()) {
+      let isDirectory = entry.isDirectory();
+      let isFile = entry.isFile();
+      if (entry.isSymbolicLink()) {
+        try {
+          const target = statSync(fullPath);
+          isDirectory = target.isDirectory();
+          isFile = target.isFile();
+        } catch { continue; } // Ignore dangling or inaccessible links.
+      }
+      const excluded = shouldExclude(relativePath, isDirectory, ignoreRules);
+      if (isDirectory) {
         // A known later negation may restore a descendant of an ignored
         // directory, so do not prune while one is in scope.
         if (!excluded || ignoreRules.some(rule => rule.negated)) scan(fullPath, ignoreRules);
       }
-      else if (entry.isFile()) {
+      else if (isFile) {
         if (excluded) continue;
         const binary = isBinary(fullPath);
         const language = getLanguage(fullPath);
