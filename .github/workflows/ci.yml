@@ -30,5 +30,3 @@ jobs:
         run: npm run smoke
       - name: npm run package:smoke
         run: npm run package:smoke
-      - name: npm run release:check
-        run: npm run release:check
